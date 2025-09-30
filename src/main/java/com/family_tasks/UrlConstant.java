@@ -3,6 +3,6 @@ package com.family_tasks;
 public interface UrlConstant {
 
     //region User
-    String createUser = "/v1/users";
+    String CREATE_USER_URI = "/v1/users";
     //endregion
 }
