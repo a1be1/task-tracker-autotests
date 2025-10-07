@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.family_tasks.UrlConstant.CREATE_USER_URI;
 import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
-import static com.family_tasks.ValidationMessenger.ValidationMessage.*;
+import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -102,7 +102,6 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
             given()
                     .contentType("application/json")
                     .body(user)
-                    .when()
                     .when()
                     .post(CREATE_USER_URI)
                     .then()

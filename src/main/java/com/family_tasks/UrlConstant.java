@@ -1,8 +1,7 @@
 package com.family_tasks;
 
-public interface UrlConstant {
-
+public final class UrlConstant {
     //region User
-    String CREATE_USER_URI = "/v1/users";
+    public static final String CREATE_USER_URI = "/v1/users";
     //endregion
 }
