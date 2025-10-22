@@ -45,7 +45,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         response.then().body("taskId", equalTo(taskId));
         response.then().body("name", equalTo(taskEntity.getName()));
-        response.then().body("status", equalTo("TO_DO"));
+        response.then().body("status", equalTo(taskEntity.getStatus()));
         response.then().body("priority", equalTo(taskEntity.getPriority()));
         response.then().body("reporterId", equalTo(taskEntity.getReporterId()));
         response.then().body("description", equalTo(taskEntity.getDescription()));
