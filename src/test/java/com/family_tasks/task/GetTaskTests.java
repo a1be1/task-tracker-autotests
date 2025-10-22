@@ -7,8 +7,9 @@ import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,10 +25,12 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class GetTaskTests extends AbstractTaskTrackerTest {
 
-    @Test()
-    public void getTaskByIdPositiveTest() {
+    @EnumSource(value = TaskPriority.class)
+    @ParameterizedTest
+    public void getTaskByIdPositiveTest(TaskPriority priority) {
         int userId = insertUserIntoDB(buildUserEntity());
         TaskEntity taskEntity = buildTaskEntity(userId);
+        taskEntity.setPriority(priority.name());
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
@@ -43,9 +46,12 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         response.then().body("taskId", equalTo(taskId));
         response.then().body("name", equalTo(taskEntity.getName()));
         response.then().body("status", equalTo("TO_DO"));
-        response.then().body("priority",equalTo(taskEntity.getPriority()));
-        // + createdAt/updatedAt/deadline/description
-
+        response.then().body("priority", equalTo(taskEntity.getPriority()));
+        response.then().body("reporterId", equalTo(taskEntity.getReporterId()));
+        response.then().body("description", equalTo(taskEntity.getDescription()));
+        response.then().body("createdAt", notNullValue());
+        response.then().body("updatedAt", notNullValue());
+        response.then().body("deadline", equalTo(taskEntity.getDeadline().toString()));
         System.out.println(response.asPrettyString());
     }
 

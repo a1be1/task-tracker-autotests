@@ -2,7 +2,6 @@ package com.family_tasks.utils;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
-import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
 
 import java.io.InputStream;
