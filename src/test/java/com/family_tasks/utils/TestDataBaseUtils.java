@@ -8,63 +8,47 @@ import java.io.InputStream;
 import java.sql.*;
 import java.util.Properties;
 
-//TODO make it more readable
 public class TestDataBaseUtils {
 
-    public static void executeDbQuery(String query) {
+    private static Connection getConnection() throws Exception {
         Properties props = new Properties();
-        Connection conn = null;
-        try (InputStream is = AbstractTaskTrackerTest.class.getClassLoader().getResourceAsStream("config.properties")) {
-            props.load(is);
-            String JDBC_URL = props.getProperty("POSTGRES_URL");
-            String JDBC_USER = props.getProperty("POSTGRES_USER");
-            String JDBC_PASS = props.getProperty("POSTGRES_PASSWORD");
-
-            conn = DriverManager.getConnection(JDBC_URL.replace("db:5432", "localhost:5432"), JDBC_USER, JDBC_PASS);
-            Statement stmt = conn.createStatement();
-            stmt.executeUpdate(query);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
-    public static ResultSet getQueryResult(String query) {
-        Properties props = new Properties();
-        try (InputStream is = AbstractTaskTrackerTest.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream is = AbstractTaskTrackerTest.class.getClassLoader()
+                .getResourceAsStream("config.properties")) {
             props.load(is);
             String JDBC_URL = props.getProperty("POSTGRES_URL").replace("db:5432", "localhost:5432");
             String JDBC_USER = props.getProperty("POSTGRES_USER");
             String JDBC_PASS = props.getProperty("POSTGRES_PASSWORD");
+            return DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASS);
+        }
+    }
 
-            Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASS);
-            Statement stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            return stmt.executeQuery(query);
+    public static void executeDbQuery(String query) {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(query);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("DB query execution failed: " + query, e);
+        }
+    }
+
+    public static <T> T query(String sql, ResultSetHandler<T> handler) {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            return handler.handle(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to execute query: " + sql, e);
         }
     }
 
     public static int insertUserIntoDB(UserEntity userEntity) {
-        Properties props = new Properties();
-        Connection conn = null;
-        int generatedID = -1;
-        try (InputStream is = AbstractTaskTrackerTest.class.getClassLoader().getResourceAsStream("config.properties")) {
-            props.load(is);
-            String JDBC_URL = props.getProperty("POSTGRES_URL");
-            String JDBC_USER = props.getProperty("POSTGRES_USER");
-            String JDBC_PASS = props.getProperty("POSTGRES_PASSWORD");
+        String sql = """
+                INSERT INTO users (name, admin, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
+                """;
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            conn = DriverManager.getConnection(JDBC_URL.replace("db:5432", "localhost:5432"), JDBC_USER, JDBC_PASS);
-            String query = "INSERT INTO users(name, admin, created_at, updated_at) VALUES (?, ?, ?, ?)";
-            PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, userEntity.getName());
             stmt.setBoolean(2, userEntity.getAdmin());
             stmt.setTimestamp(3, Timestamp.valueOf(userEntity.getCreatedAt()));
@@ -72,41 +56,28 @@ public class TestDataBaseUtils {
 
             stmt.executeUpdate();
 
-            ResultSet cursor = stmt.getGeneratedKeys();
-            cursor.next();
-            generatedID = cursor.getInt(1);
-            userEntity.builder().id(generatedID).build();
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    int id = keys.getInt(1);
+                    userEntity.setId(id);
+                    return id;
                 }
             }
+            return -1;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to insert user", e);
         }
-        return generatedID;
     }
 
     public static void insertTaskIntoDB(TaskEntity taskEntity) {
-        Properties props = new Properties();
-        Connection conn = null;
-        try (InputStream is = AbstractTaskTrackerTest.class.getClassLoader().getResourceAsStream("config.properties")) {
-            props.load(is);
-            String JDBC_URL = props.getProperty("POSTGRES_URL");
-            String JDBC_USER = props.getProperty("POSTGRES_USER");
-            String JDBC_PASS = props.getProperty("POSTGRES_PASSWORD");
+        String sql = """
+                INSERT INTO tasks (id, name, description, priority, status, reporter_id,
+                                   confidential, deadline, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            conn = DriverManager.getConnection(JDBC_URL.replace("db:5432", "localhost:5432"), JDBC_USER, JDBC_PASS);
-            String query = """
-                    INSERT INTO tasks (id, name, description, priority, status, reporter_id,
-                    confidential, deadline, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """;
-            PreparedStatement stmt = conn.prepareStatement(query);
             stmt.setString(1, taskEntity.getTaskId());
             stmt.setString(2, taskEntity.getName());
             stmt.setString(3, taskEntity.getDescription());
@@ -120,15 +91,12 @@ public class TestDataBaseUtils {
 
             stmt.executeUpdate();
         } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            throw new RuntimeException("Failed to insert task", e);
         }
+    }
+
+    @FunctionalInterface
+    public interface ResultSetHandler<T> {
+        T handle(ResultSet resultSet) throws SQLException;
     }
 }
