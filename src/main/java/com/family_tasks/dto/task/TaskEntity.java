@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TaskApiResponse {
+public class TaskEntity {
 
     private String taskId;
     private String name;
@@ -21,7 +23,7 @@ public class TaskApiResponse {
     private int reporterId;
     private List<Integer> executorIds;
     private boolean confidential;
-    private String deadline;
-    private String createdAt;
-    private String updatedAt;
+    private LocalDate deadline;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
