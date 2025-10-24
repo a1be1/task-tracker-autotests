@@ -1,14 +1,22 @@
 package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
+import com.family_tasks.dto.task.TaskEntity;
+import com.family_tasks.dto.user.UserEntity;
+import com.family_tasks.enums.TaskPriority;
+import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.sql.ResultSet;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
-import static com.family_tasks.utils.TestDataBaseUtils.executeDbQuery;
-import static com.family_tasks.utils.TestDataBaseUtils.getQueryResult;
+import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.withArgs;
@@ -17,36 +25,15 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class GetTaskTests extends AbstractTaskTrackerTest {
 
-    private static int userId;
-    private static String taskId;
-    private String taskName;
-    private String taskDescription;
+    @EnumSource(value = TaskPriority.class)
+    @ParameterizedTest
+    public void getTaskByIdPositiveTest(TaskPriority priority) {
+        int userId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(userId);
+        taskEntity.setPriority(priority.name());
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
 
-    @BeforeEach
-    void preCondition() throws Exception {
-
-        String userName = "user_" + randomString(6);
-        executeDbQuery("""
-            INSERT INTO users (name, admin, created_at, updated_at)
-            VALUES ('%s', true, now(), now());
-        """.formatted(userName));
-
-        userId = getLastInsertedUserId();
-
-        taskId = randomString(8);
-        taskName = "task_" + randomString(5);
-        taskDescription = "desc_" + randomString(10);
-
-        executeDbQuery("""
-            INSERT INTO tasks (id, name, description, priority, status, reporter_id,
-                               confidential, deadline, created_at, updated_at)
-            VALUES ('%s', '%s', '%s', 'LOW', 'TO_DO',
-                    %d, false, current_date + interval '7 days', now(), now());
-        """.formatted(taskId, taskName, taskDescription, userId));
-    }
-
-    @Test()
-    public void getTaskByIdPositiveTest() {
         Response response = given()
                 .queryParam("userId", userId)
                 .when()
@@ -57,14 +44,23 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .response();
 
         response.then().body("taskId", equalTo(taskId));
-        response.then().body("name", equalTo(taskName));
-        response.then().body("status", equalTo("TO_DO"));
-
+        response.then().body("name", equalTo(taskEntity.getName()));
+        response.then().body("status", equalTo(taskEntity.getStatus()));
+        response.then().body("priority", equalTo(taskEntity.getPriority()));
+        response.then().body("reporterId", equalTo(taskEntity.getReporterId()));
+        response.then().body("description", equalTo(taskEntity.getDescription()));
+        response.then().body("createdAt", notNullValue());
+        response.then().body("updatedAt", notNullValue());
+        response.then().body("deadline", equalTo(taskEntity.getDeadline().toString()));
         System.out.println(response.asPrettyString());
     }
 
     @Test
     public void getAllTasksByUser() {
+        int userId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(userId);
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
         Response response = given()
                 .queryParam("userId", userId)
                 .queryParam("filter", "ALL_AVAILABLE")
@@ -78,22 +74,37 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         System.out.println(response.asPrettyString());
 
         response.then().body("find { it.taskId == '%s' }", withArgs(taskId), notNullValue());
-        response.then().body("find { it.taskId == '%s' }.name", withArgs(taskId), equalTo(taskName));
+        response.then().body("find { it.taskId == '%s' }.name", withArgs(taskId), equalTo(taskEntity.getName()));
         response.then().body("find { it.taskId == '%s' }.status", withArgs(taskId), equalTo("TO_DO"));
     }
 
-    private int getLastInsertedUserId() throws Exception {
-        try (ResultSet rs = getQueryResult("SELECT id FROM users ORDER BY id DESC LIMIT 1;")) {
-            if (rs.next()) {
-                return rs.getInt("id");
-            }
-        }
-        throw new RuntimeException("Couldn't get userId");
+    @AfterAll
+    public static void clearDB() {
+        executeDbQuery("DELETE FROM tasks");
+        executeDbQuery("DELETE FROM users");
     }
 
-    @AfterEach
-    public void clearDB() {
-        executeDbQuery("DELETE FROM tasks WHERE id = '%s';".formatted(taskId));
-        executeDbQuery("DELETE FROM users WHERE id = %d;".formatted(userId));
+    private UserEntity buildUserEntity() {
+        return UserEntity.builder()
+                .admin(true)
+                .name("user_" + randomString(6))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    private TaskEntity buildTaskEntity(Integer userId) {
+        return TaskEntity.builder()
+                .taskId(UUID.randomUUID().toString())
+                .name("task_" + randomString(5))
+                .description("desc_" + randomString(10))
+                .reporterId(userId)
+                .priority(TaskPriority.LOW.name())
+                .status(TaskStatus.TO_DO.name())
+                .confidential(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .deadline(LocalDate.now().plusDays(7))
+                .build();
     }
 }
