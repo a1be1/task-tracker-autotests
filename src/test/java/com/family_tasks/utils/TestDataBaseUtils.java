@@ -93,6 +93,21 @@ public class TestDataBaseUtils {
         } catch (Exception e) {
             throw new RuntimeException("Failed to insert task", e);
         }
+        if (taskEntity.getExecutorIds() != null && !taskEntity.getExecutorIds().isEmpty()) {
+            String executorSql = "INSERT INTO executors_tasks (task_id, user_id) VALUES (?, ?)";
+            try (Connection conn = getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(executorSql)) {
+
+                for (Integer executorId : taskEntity.getExecutorIds()) {
+                    stmt.setString(1, taskEntity.getTaskId());
+                    stmt.setInt(2, executorId);
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to insert task executors", e);
+            }
+        }
     }
 
     @FunctionalInterface

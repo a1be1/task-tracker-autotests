@@ -1,12 +1,17 @@
 package com.family_tasks;
 
-import io.restassured.RestAssured;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.BeforeAll;
 
 public abstract class AbstractTaskTrackerTest {
-    //TODO pull this value from the ".env" file
+
     @BeforeAll
     static void setup() {
-        RestAssured.baseURI = "http://localhost:8080";
+
+        Dotenv dotenv = Dotenv.configure()
+                .ignoreIfMissing()
+                .load();
+
+        dotenv.get("TASK_TRACKER_BASE_URL");
     }
 }

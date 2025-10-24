@@ -13,23 +13,23 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.withArgs;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 public class GetTaskTests extends AbstractTaskTrackerTest {
 
     @EnumSource(value = TaskPriority.class)
     @ParameterizedTest
-    public void getTaskByIdPositiveTest(TaskPriority priority) {
+    public void getTaskByPriorityPositiveTest(TaskPriority priority) {
         int userId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(userId);
+        TaskEntity taskEntity = buildTaskEntity(userId, null, false);
         taskEntity.setPriority(priority.name());
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
@@ -40,46 +40,138 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
+                .body("taskId", equalTo(taskId))
+                .body("name", equalTo(taskEntity.getName()))
+                .body("status", equalTo(taskEntity.getStatus()))
+                .body("priority", equalTo(taskEntity.getPriority()))
+                .body("reporterId", equalTo(taskEntity.getReporterId()))
+                .body("description", equalTo(taskEntity.getDescription()))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .body("deadline", equalTo(taskEntity.getDeadline().toString()))
                 .extract()
                 .response();
 
-        response.then().body("taskId", equalTo(taskId));
-        response.then().body("name", equalTo(taskEntity.getName()));
-        response.then().body("status", equalTo(taskEntity.getStatus()));
-        response.then().body("priority", equalTo(taskEntity.getPriority()));
-        response.then().body("reporterId", equalTo(taskEntity.getReporterId()));
-        response.then().body("description", equalTo(taskEntity.getDescription()));
-        response.then().body("createdAt", notNullValue());
-        response.then().body("updatedAt", notNullValue());
-        response.then().body("deadline", equalTo(taskEntity.getDeadline().toString()));
-        System.out.println(response.asPrettyString());
+        response.prettyPrint();
+    }
+
+    @EnumSource(value = TaskStatus.class)
+    @ParameterizedTest
+    public void getTaskByStatusTest(TaskStatus status) {
+        int userId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(userId, null, false);
+        taskEntity.setStatus(status.name());
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
+
+        Response response = given()
+                .queryParam("userId", userId)
+                .when()
+                .get(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(200)
+                .body("taskId", equalTo(taskId))
+                .body("name", equalTo(taskEntity.getName()))
+                .body("status", equalTo(taskEntity.getStatus()))
+                .body("priority", equalTo(taskEntity.getPriority()))
+                .body("reporterId", equalTo(taskEntity.getReporterId()))
+                .body("description", equalTo(taskEntity.getDescription()))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .body("deadline", equalTo(taskEntity.getDeadline().toString()))
+                .extract()
+                .response();
+
+        response.prettyPrint();
     }
 
     @Test
-    public void getAllTasksByUser() {
+    public void getTaskWithConfidentialTrueForReporterTest() {
         int userId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(userId);
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(userId, null, true);
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
+
         Response response = given()
-                .queryParam("userId", userId)
-                .queryParam("filter", "ALL_AVAILABLE")
+                .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI)
+                .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
+                .body("taskId", equalTo(taskId))
+                .body("name", equalTo(taskEntity.getName()))
+                .body("status", equalTo(taskEntity.getStatus()))
+                .body("priority", equalTo(taskEntity.getPriority()))
+                .body("reporterId", equalTo(taskEntity.getReporterId()))
+                .body("description", equalTo(taskEntity.getDescription()))
+                .body("confidential", equalTo(taskEntity.isConfidential()))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .body("deadline", equalTo(taskEntity.getDeadline().toString()))
                 .extract()
                 .response();
 
-        System.out.println(response.asPrettyString());
+        response.prettyPrint();
+    }
 
-        response.then().body("find { it.taskId == '%s' }", withArgs(taskId), notNullValue());
-        response.then().body("find { it.taskId == '%s' }.name", withArgs(taskId), equalTo(taskEntity.getName()));
-        response.then().body("find { it.taskId == '%s' }.status", withArgs(taskId), equalTo("TO_DO"));
+    @Test
+    public void getTaskWithConfidentialTrueForExecutorTest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        int executorId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(reporterId, null,true);
+        taskEntity.addExecutor(executorId);
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
+
+        Response response = given()
+                .queryParam("userId", executorId)
+                .when()
+                .get(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(200)
+                .body("taskId", equalTo(taskId))
+                .body("name", equalTo(taskEntity.getName()))
+                .body("status", equalTo(taskEntity.getStatus()))
+                .body("priority", equalTo(taskEntity.getPriority()))
+                .body("reporterId", equalTo(taskEntity.getReporterId()))
+                .body("executorIds", hasItem(executorId))
+                .body("description", equalTo(taskEntity.getDescription()))
+                .body("confidential", equalTo(taskEntity.isConfidential()))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .body("deadline", equalTo(taskEntity.getDeadline().toString()))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getTaskWithConfidentialTrueForNotAllowedUserTest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        int executorId = insertUserIntoDB(buildUserEntity());
+        int notAllowedId = insertUserIntoDB(buildUserEntity());
+
+        TaskEntity taskEntity = buildTaskEntity(reporterId, List.of(executorId), true);
+        taskEntity.addExecutor(executorId);
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
+
+        given()
+                .queryParam("userId", notAllowedId)
+                .when()
+                .get(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(404)
+                .body("errorMessage", equalTo("Task with id " + taskId + " doesn't exist"));
     }
 
     @AfterAll
     public static void clearDB() {
+        executeDbQuery("DELETE FROM executors_tasks");
         executeDbQuery("DELETE FROM tasks");
         executeDbQuery("DELETE FROM users");
     }
@@ -93,18 +185,30 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .build();
     }
 
-    private TaskEntity buildTaskEntity(Integer userId) {
+    private TaskEntity buildTaskEntity(Integer userId, List<Integer> executorIds, boolean confidential) {
         return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
                 .name("task_" + randomString(5))
                 .description("desc_" + randomString(10))
                 .reporterId(userId)
+                .executorIds(executorIds != null ? new ArrayList<>(executorIds) : new ArrayList<>())
                 .priority(TaskPriority.LOW.name())
                 .status(TaskStatus.TO_DO.name())
-                .confidential(false)
+                .confidential(confidential)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deadline(LocalDate.now().plusDays(7))
                 .build();
     }
+
+    private List<Integer> createTestUsers(int count) {
+        List<Integer> userIds = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            UserEntity user = buildUserEntity();
+            int userId = insertUserIntoDB(user);
+            userIds.add(userId);
+        }
+        return userIds;
+    }
+
 }
