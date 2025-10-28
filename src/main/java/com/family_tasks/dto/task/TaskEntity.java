@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -25,18 +24,4 @@ public class TaskEntity {
     private LocalDate deadline;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    public void addExecutor(Integer executorId) {
-        if (executorIds == null) {
-            executorIds = new ArrayList<>();
-        }
-        executorIds.add(executorId);
-    }
-
-    public void addExecutors(List<Integer> executors) {
-        if (executorIds == null) {
-            executorIds = new ArrayList<>();
-        }
-        executorIds.addAll(executors);
-    }
 }

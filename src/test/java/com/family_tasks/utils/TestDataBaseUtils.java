@@ -6,6 +6,7 @@ import com.family_tasks.dto.user.UserEntity;
 
 import java.io.InputStream;
 import java.sql.*;
+import java.util.List;
 import java.util.Properties;
 
 public class TestDataBaseUtils {
@@ -94,19 +95,23 @@ public class TestDataBaseUtils {
             throw new RuntimeException("Failed to insert task", e);
         }
         if (taskEntity.getExecutorIds() != null && !taskEntity.getExecutorIds().isEmpty()) {
-            String executorSql = "INSERT INTO executors_tasks (task_id, user_id) VALUES (?, ?)";
-            try (Connection conn = getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(executorSql)) {
+            insertTaskExecutors(taskEntity.getTaskId(), taskEntity.getExecutorIds());
+        }
+    }
 
-                for (Integer executorId : taskEntity.getExecutorIds()) {
-                    stmt.setString(1, taskEntity.getTaskId());
-                    stmt.setInt(2, executorId);
-                    stmt.addBatch();
-                }
-                stmt.executeBatch();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to insert task executors", e);
+    private static void insertTaskExecutors(String taskId, List<Integer> executorIds) {
+        String executorSql = "INSERT INTO executors_tasks (task_id, user_id) VALUES (?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(executorSql)) {
+
+            for (Integer executorId : executorIds) {
+                stmt.setString(1, taskId);
+                stmt.setInt(2, executorId);
+                stmt.addBatch();
             }
+            stmt.executeBatch();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to insert task executors", e);
         }
     }
 

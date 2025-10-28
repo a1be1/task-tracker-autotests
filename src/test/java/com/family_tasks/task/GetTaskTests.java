@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -27,11 +28,14 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
     @EnumSource(value = TaskPriority.class)
     @ParameterizedTest
-    public void getTaskByPriorityPositiveTest(TaskPriority priority) {
+    public void getTaskById_shouldReturnTaskWithGivenPriority(TaskPriority priority) {
+
         int userId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(userId, null, false);
+
+        TaskEntity taskEntity = buildTaskEntity(userId);
         taskEntity.setPriority(priority.name());
         insertTaskIntoDB(taskEntity);
+
         String taskId = taskEntity.getTaskId();
 
         Response response = given()
@@ -57,11 +61,13 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
     @EnumSource(value = TaskStatus.class)
     @ParameterizedTest
-    public void getTaskByStatusTest(TaskStatus status) {
+    public void getTaskById_shouldReturnTaskWithGivenStatus(TaskStatus status) {
         int userId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(userId, null, false);
+
+        TaskEntity taskEntity = buildTaskEntity(userId);
         taskEntity.setStatus(status.name());
         insertTaskIntoDB(taskEntity);
+
         String taskId = taskEntity.getTaskId();
 
         Response response = given()
@@ -86,11 +92,13 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void getTaskWithConfidentialTrueForReporterTest() {
+    public void getTaskById_shouldReturnConfidentialTask_forReporter() {
         int userId = insertUserIntoDB(buildUserEntity());
         int reporterId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(userId, null, true);
+
+        TaskEntity taskEntity = buildTaskEntity(userId);
         insertTaskIntoDB(taskEntity);
+
         String taskId = taskEntity.getTaskId();
 
         Response response = given()
@@ -116,13 +124,15 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void getTaskWithConfidentialTrueForExecutorTest() {
+    public void getTaskById_withConfidentialTrue_forExecutor() {
 
         int reporterId = insertUserIntoDB(buildUserEntity());
         int executorId = insertUserIntoDB(buildUserEntity());
-        TaskEntity taskEntity = buildTaskEntity(reporterId, null,true);
-        taskEntity.addExecutor(executorId);
+
+        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        taskEntity.setExecutorIds(List.of(executorId));
         insertTaskIntoDB(taskEntity);
+
         String taskId = taskEntity.getTaskId();
 
         Response response = given()
@@ -149,24 +159,94 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void getTaskWithConfidentialTrueForNotAllowedUserTest() {
+    public void getTaskById_withConfidentialTrueForNotAllowedUser_thenAccessDenied () {
 
         int reporterId = insertUserIntoDB(buildUserEntity());
         int executorId = insertUserIntoDB(buildUserEntity());
-        int notAllowedId = insertUserIntoDB(buildUserEntity());
+        int notAllowedUserId = insertUserIntoDB(buildUserEntity());
 
-        TaskEntity taskEntity = buildTaskEntity(reporterId, List.of(executorId), true);
-        taskEntity.addExecutor(executorId);
-        insertTaskIntoDB(taskEntity);
+        TaskEntity taskEntity = TaskEntity.builder()
+                .reporterId(reporterId)
+                .confidential(true)
+                .executorIds(List.of(executorId, reporterId))
+                .build();
+
         String taskId = taskEntity.getTaskId();
 
-        given()
-                .queryParam("userId", notAllowedId)
+        Response response = given()
+                .queryParam("userId", notAllowedUserId)
                 .when()
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo("Task with id " + taskId + " doesn't exist"));
+                .body("errorMessage", equalTo("Task with id " + taskId + " doesn't exist"))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getTaskById_missingUserId_thenBadRequest() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
+
+        Response response = given()
+                .when()
+                .get(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo("A user isn't specified."))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTaskById_invalidUserId_thenBadRequest() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        insertTaskIntoDB(taskEntity);
+        String taskId = taskEntity.getTaskId();
+
+        int invalidUserId = ThreadLocalRandom.current().nextInt(10000, 100000);
+
+        Response response = given()
+                .queryParam("userId", invalidUserId)
+                .when()
+                .get(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(404)
+                .body("errorMessage", equalTo("User with id " + invalidUserId + " doesn't exist"))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTaskById_invalidTaskId_thenBadRequest() {
+
+        int userId = insertUserIntoDB(buildUserEntity());
+
+        String invalidTaskId = UUID.randomUUID().toString();
+
+        Response response = given()
+                .queryParam("userId", userId)
+                .when()
+                .get(GET_TASKS_URI + "/" + invalidTaskId)
+                .then()
+                .statusCode(404)
+                .body("errorMessage", equalTo("Task with id " + invalidTaskId + " doesn't exist"))
+                .extract()
+                .response();
+
+        response.prettyPrint();
     }
 
     @AfterAll
@@ -185,16 +265,16 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .build();
     }
 
-    private TaskEntity buildTaskEntity(Integer userId, List<Integer> executorIds, boolean confidential) {
+    private TaskEntity buildTaskEntity(Integer userId) {
         return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
                 .name("task_" + randomString(5))
                 .description("desc_" + randomString(10))
                 .reporterId(userId)
-                .executorIds(executorIds != null ? new ArrayList<>(executorIds) : new ArrayList<>())
                 .priority(TaskPriority.LOW.name())
                 .status(TaskStatus.TO_DO.name())
-                .confidential(confidential)
+                .confidential(false)
+                .executorIds(List.of())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deadline(LocalDate.now().plusDays(7))
