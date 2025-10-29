@@ -19,7 +19,9 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
+import static com.family_tasks.utils.TestValuesUtils.randomInt;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -130,10 +132,11 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         int executorId = insertUserIntoDB(buildUserEntity());
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
-        taskEntity.setExecutorIds(List.of(executorId));
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
+
+        insertTaskExecutors(taskId, List.of(executorId));
 
         Response response = given()
                 .queryParam("userId", executorId)
@@ -165,13 +168,14 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         int executorId = insertUserIntoDB(buildUserEntity());
         int notAllowedUserId = insertUserIntoDB(buildUserEntity());
 
-        TaskEntity taskEntity = TaskEntity.builder()
-                .reporterId(reporterId)
-                .confidential(true)
-                .executorIds(List.of(executorId, reporterId))
-                .build();
+        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        taskEntity.setConfidential(true);
+
+        insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
+
+        insertTaskExecutors(taskId, List.of(reporterId, executorId));
 
         Response response = given()
                 .queryParam("userId", notAllowedUserId)
@@ -179,7 +183,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo("Task with id " + taskId + " doesn't exist"))
+                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST,taskId)))
                 .extract()
                 .response();
 
@@ -198,7 +202,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo("A user isn't specified."))
+                .body("errorMessage", equalTo(USER_NOT_SPECIFIED))
                 .extract()
                 .response();
 
@@ -213,7 +217,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
-        int invalidUserId = ThreadLocalRandom.current().nextInt(10000, 100000);
+        int invalidUserId = reporterId +2;
 
         Response response = given()
                 .queryParam("userId", invalidUserId)
@@ -221,12 +225,11 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo("User with id " + invalidUserId + " doesn't exist"))
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
                 .extract()
                 .response();
 
         response.prettyPrint();
-
     }
 
     @Test
@@ -242,7 +245,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI + "/" + invalidTaskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo("Task with id " + invalidTaskId + " doesn't exist"))
+                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, invalidTaskId)))
                 .extract()
                 .response();
 
@@ -274,7 +277,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .priority(TaskPriority.LOW.name())
                 .status(TaskStatus.TO_DO.name())
                 .confidential(false)
-                .executorIds(List.of())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deadline(LocalDate.now().plusDays(7))

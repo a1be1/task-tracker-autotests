@@ -4,10 +4,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,7 +18,6 @@ public class TaskEntity {
     private String description;
     private String priority;
     private int reporterId;
-    private List<Integer> executorIds;
     private boolean confidential;
     private LocalDate deadline;
     private LocalDateTime createdAt;

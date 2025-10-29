@@ -94,12 +94,9 @@ public class TestDataBaseUtils {
         } catch (Exception e) {
             throw new RuntimeException("Failed to insert task", e);
         }
-        if (taskEntity.getExecutorIds() != null && !taskEntity.getExecutorIds().isEmpty()) {
-            insertTaskExecutors(taskEntity.getTaskId(), taskEntity.getExecutorIds());
-        }
     }
 
-    private static void insertTaskExecutors(String taskId, List<Integer> executorIds) {
+    public static void insertTaskExecutors(String taskId, List<Integer> executorIds) {
         String executorSql = "INSERT INTO executors_tasks (task_id, user_id) VALUES (?, ?)";
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(executorSql)) {
