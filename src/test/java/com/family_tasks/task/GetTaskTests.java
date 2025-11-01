@@ -93,10 +93,12 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
     @Test
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
-        int userId = insertUserIntoDB(buildUserEntity());
+
         int reporterId = insertUserIntoDB(buildUserEntity());
 
-        TaskEntity taskEntity = buildTaskEntity(userId);
+        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        taskEntity.setConfidential(true);
+
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
@@ -130,6 +132,8 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         int executorId = insertUserIntoDB(buildUserEntity());
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
+        taskEntity.setConfidential(true);
+
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
