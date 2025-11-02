@@ -8,6 +8,7 @@ import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ import static io.restassured.RestAssured.withArgs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
@@ -154,8 +156,138 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
     }
 
-    @AfterAll
-    public static void clearDB() {
+    @Test
+    public void getTasks_whenIsReporterActiveTask() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        List<TaskEntity> activeTasks = new ArrayList<>();
+        for (TaskEntity t : tasks) {
+            if (isActiveTask(t)) {
+                activeTasks.add(t);
+            }
+        }
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.IS_REPORTER_ACTIVE_TASK.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (IS_REPORTER_ACTIVE_TASK): " + statuses);
+        assertFalse(activeTasks.isEmpty(), "No active tasks found");
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTasks_whenIsExecutorCompletedTask() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        int executorId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        for (TaskEntity task : tasks) {
+            insertTaskExecutors(task.getTaskId(), List.of(executorId));
+        }
+
+        List<TaskEntity> completedTasks = new ArrayList<>();
+        for (TaskEntity t : tasks) {
+            if (isCompletedTask(t)) {
+                completedTasks.add(t);
+            }
+        }
+
+        Response response = given()
+                .queryParam("userId", executorId)
+                .queryParam("filter", TaskFilter.IS_EXECUTOR_COMPLETED_TASK.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (IS_EXECUTOR_COMPLETED_TASK): " + statuses);
+        assertFalse(completedTasks.isEmpty(), "No completed tasks found");
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTasks_whenIsReporterCompletedTask() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        List<TaskEntity> completedTasks = new ArrayList<>();
+        for (TaskEntity t : tasks) {
+            if (isCompletedTask(t)) {
+                completedTasks.add(t);
+            }
+        }
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.IS_REPORTER_COMPLETED_TASK.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (IS_REPORTER_COMPLETED_TASK): " + statuses);
+        assertFalse(completedTasks.isEmpty(), "No completed tasks found");
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTasks_whenUserHasNoTasks_thenReturnEmptyList() {
+        int userId = insertUserIntoDB(buildUserEntity());
+
+        Response response = given()
+                .queryParam("userId", userId)
+                .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<String> taskIds = response.jsonPath().getList("taskId");
+        assertTrue(taskIds == null || taskIds.isEmpty(), "Expected empty task list for new user");
+
+        response.prettyPrint();
+
+    }
+
+    @AfterEach
+    public void clearDB() {
         executeDbQuery("DELETE FROM executors_tasks");
         executeDbQuery("DELETE FROM tasks");
         executeDbQuery("DELETE FROM users");
