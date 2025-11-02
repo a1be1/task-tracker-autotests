@@ -7,7 +7,6 @@ import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
@@ -284,6 +284,109 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         response.prettyPrint();
 
+    }
+
+    @Test
+    public void getAllAvailableTasks_withMissingUserId_thenBadRequest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(USER_NOT_SPECIFIED))
+                .extract().response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllAvailableTasks_withInvalidUserId_thenBadRequest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        int invalidUserId = reporterId +2;
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", invalidUserId)
+                .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(404)
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
+                .extract().response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllAvailableTasks_withInvalidFilter_thenBadRequest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", "ALL")
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(String.format(TASK_FILTER_INVALID)))
+                .extract().response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllAvailableTasks_withMissingFilter_thenBadRequest() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(String.format(TASK_FILTER_NOT_SPECIFIED)))
+                .extract().response();
+
+        response.prettyPrint();
     }
 
     @AfterEach
