@@ -1,0 +1,223 @@
+package com.family_tasks.task;
+
+import com.family_tasks.AbstractTaskTrackerTest;
+import com.family_tasks.dto.task.TaskEntity;
+import com.family_tasks.dto.user.UserEntity;
+import com.family_tasks.enums.TaskFilter;
+import com.family_tasks.enums.TaskPriority;
+import com.family_tasks.enums.TaskStatus;
+import io.restassured.response.Response;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.utils.TestDataBaseUtils.*;
+import static com.family_tasks.utils.TestValuesUtils.randomString;
+import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.withArgs;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+public class GetAllTasksTests extends AbstractTaskTrackerTest {
+
+    @Test
+    public void getAllAvailableTasks_returnsAllTasks() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        for (TaskEntity task : tasks) {
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (ALL_AVAILABLE): " + statuses);
+        assertThat(statuses.size(), equalTo(tasks.size()));
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllClosedTasks() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.ALL_CLOSED.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        for (TaskEntity task : tasks) {
+            if (!task.getStatus().equals(TaskStatus.CANCELLED.name())) {
+                continue;
+            }
+
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (ALL_CLOSED): " + statuses);
+        assertThat(statuses, hasItem("CANCELLED"));
+        response.prettyPrint();
+
+    }
+
+    @Test
+    public void getTasks_whenIsExecutorActiveTask() {
+        int reporterId = insertUserIntoDB(buildUserEntity());
+        int executorId = insertUserIntoDB(buildUserEntity());
+
+        List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        for (TaskEntity task : tasks) {
+            insertTaskExecutors(task.getTaskId(), List.of(executorId));
+        }
+
+
+        List<TaskEntity> activeTasks = new ArrayList<>();
+        for (TaskEntity t : tasks) {
+            if (isActiveTask(t)) {
+                activeTasks.add(t);
+            }
+        }
+
+        Response response = given()
+                .queryParam("userId", executorId)
+                .queryParam("filter", TaskFilter.IS_EXECUTOR_ACTIVE_TASK.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<String> statuses = response.jsonPath().getList("status");
+        System.out.println("Statuses (IS_EXECUTOR_ACTIVE_TASK): " + statuses);
+        assertFalse(activeTasks.isEmpty(), "No active tasks found");
+        response.prettyPrint();
+
+    }
+
+    @AfterAll
+    public static void clearDB() {
+        executeDbQuery("DELETE FROM executors_tasks");
+        executeDbQuery("DELETE FROM tasks");
+        executeDbQuery("DELETE FROM users");
+    }
+
+    public static UserEntity buildUserEntity() {
+        return UserEntity.builder()
+                .admin(true)
+                .name("user_" + randomString(6))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static TaskEntity buildTaskEntity(Integer userId) {
+        return TaskEntity.builder()
+                .taskId(UUID.randomUUID().toString())
+                .name("task_" + randomString(5))
+                .description("desc_" + randomString(10))
+                .reporterId(userId)
+                .priority(TaskPriority.LOW.name())
+                .status(TaskStatus.TO_DO.name())
+                .confidential(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .deadline(LocalDate.now().plusDays(7))
+                .build();
+    }
+
+    private List<TaskEntity> createTasksForStatusesAndInsertIntoDB(int userId, TaskStatus... statuses) {
+        List<TaskEntity> tasks = new ArrayList<>();
+
+        for (TaskStatus status : statuses) {
+            TaskEntity task = TaskEntity.builder()
+                    .taskId(UUID.randomUUID().toString())
+                    .name("task_" + randomString(5))
+                    .description("desc_" + randomString(10))
+                    .reporterId(userId)
+                    .priority(TaskPriority.LOW.name())
+                    .status(status.name())
+                    .confidential(false)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .deadline(LocalDate.now().plusDays(7))
+                    .build();
+
+            insertTaskIntoDB(task);
+            tasks.add(task);
+        }
+
+        return tasks;
+    }
+
+    private boolean isActiveTask(TaskEntity task) {
+        String status = task.getStatus();
+        return status.equals(TaskStatus.TO_DO.name())
+                || status.equals(TaskStatus.IN_PROGRESS.name());
+    }
+
+    private boolean isCompletedTask(TaskEntity task) {
+        String status = task.getStatus();
+        return status.equals(TaskStatus.COMPLETED.name())
+                || status.equals(TaskStatus.CANCELLED.name());
+    }
+}
