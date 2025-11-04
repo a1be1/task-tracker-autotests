@@ -32,9 +32,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnTaskWithGivenPriority(TaskPriority priority) {
 
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setPriority(priority.name());
@@ -102,9 +102,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
 
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
@@ -140,8 +140,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
@@ -182,8 +181,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         GroupEntity otherGroup = createUserWithGroup();
@@ -217,9 +215,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_missingUserId_thenBadRequest() {
 
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         insertTaskIntoDB(taskEntity);
@@ -241,9 +239,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     @Test
     public void getTaskById_invalidUserId_thenBadRequest() {
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
-        int ownerId = group.getOwnerId();
-        int reporterId = ownerId;
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         insertTaskIntoDB(taskEntity);
