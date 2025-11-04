@@ -24,7 +24,6 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.withArgs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GetAllTasksTests extends AbstractTaskTrackerTest {
@@ -110,7 +109,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<String> statuses = response.jsonPath().getList("status");
         System.out.println("Statuses (ALL_CLOSED): " + statuses);
-        assertThat(statuses, hasItem("CANCELLED"));
+        assertThat(statuses, contains("CANCELLED"));
         response.prettyPrint();
 
     }
@@ -132,10 +131,9 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
             insertTaskExecutors(task.getTaskId(), List.of(executorId));
         }
 
-
         List<TaskEntity> activeTasks = new ArrayList<>();
         for (TaskEntity t : tasks) {
-            if (isActiveTask(t)) {
+            if (t.isActiveTask()) {
                 activeTasks.add(t);
             }
         }
@@ -149,11 +147,27 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .statusCode(200)
                 .extract().response();
 
-        List<String> statuses = response.jsonPath().getList("status");
-        System.out.println("Statuses (IS_EXECUTOR_ACTIVE_TASK): " + statuses);
-        assertFalse(activeTasks.isEmpty(), "No active tasks found");
-        response.prettyPrint();
+        for (TaskEntity task : tasks) {
+            if (!task.isActiveTask()) {
+                continue;
+            }
 
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+
+        List<String> statuses = response.jsonPath().getList("status");
+        assertThat(statuses, contains("TO_DO", "IN_PROGRESS"));
+        System.out.println("Statuses (IS_EXECUTOR_ACTIVE_TASK): " + statuses);
+        response.prettyPrint();
     }
 
     @Test
@@ -170,7 +184,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<TaskEntity> activeTasks = new ArrayList<>();
         for (TaskEntity t : tasks) {
-            if (isActiveTask(t)) {
+            if (t.isActiveTask()) {
                 activeTasks.add(t);
             }
         }
@@ -184,11 +198,27 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .statusCode(200)
                 .extract().response();
 
-        List<String> statuses = response.jsonPath().getList("status");
-        System.out.println("Statuses (IS_REPORTER_ACTIVE_TASK): " + statuses);
-        assertFalse(activeTasks.isEmpty(), "No active tasks found");
-        response.prettyPrint();
+        for (TaskEntity task : tasks) {
+            if (!task.isActiveTask()) {
+                continue;
+            }
 
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+
+        List<String> statuses = response.jsonPath().getList("status");
+        assertThat(statuses, contains("TO_DO", "IN_PROGRESS"));
+        System.out.println("Statuses (IS_REPORTER_ACTIVE_TASK): " + statuses);
+        response.prettyPrint();
     }
 
     @Test
@@ -210,7 +240,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<TaskEntity> completedTasks = new ArrayList<>();
         for (TaskEntity t : tasks) {
-            if (isCompletedTask(t)) {
+            if (t.isCompletedTask()) {
                 completedTasks.add(t);
             }
         }
@@ -224,11 +254,27 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .statusCode(200)
                 .extract().response();
 
-        List<String> statuses = response.jsonPath().getList("status");
-        System.out.println("Statuses (IS_EXECUTOR_COMPLETED_TASK): " + statuses);
-        assertFalse(completedTasks.isEmpty(), "No completed tasks found");
-        response.prettyPrint();
+        for (TaskEntity task : tasks) {
+            if (!task.isCompletedTask()) {
+                continue;
+            }
 
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+
+        List<String> statuses = response.jsonPath().getList("status");
+        assertThat(statuses, contains("COMPLETED"));
+        System.out.println("Statuses (IS_EXECUTOR_ACTIVE_TASK): " + statuses);
+        response.prettyPrint();
     }
 
     @Test
@@ -245,7 +291,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<TaskEntity> completedTasks = new ArrayList<>();
         for (TaskEntity t : tasks) {
-            if (isCompletedTask(t)) {
+            if (t.isCompletedTask()) {
                 completedTasks.add(t);
             }
         }
@@ -259,11 +305,27 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .statusCode(200)
                 .extract().response();
 
-        List<String> statuses = response.jsonPath().getList("status");
-        System.out.println("Statuses (IS_REPORTER_COMPLETED_TASK): " + statuses);
-        assertFalse(completedTasks.isEmpty(), "No completed tasks found");
-        response.prettyPrint();
+        for (TaskEntity task : tasks) {
+            if (!task.isCompletedTask()) {
+                continue;
+            }
 
+            response.then()
+                    .body("find { it.taskId == '%s' }.name", withArgs(task.getTaskId()), equalTo(task.getName()))
+                    .body("find { it.taskId == '%s' }.status", withArgs(task.getTaskId()), equalTo(task.getStatus()))
+                    .body("find { it.taskId == '%s' }.priority", withArgs(task.getTaskId()), equalTo(task.getPriority()))
+                    .body("find { it.taskId == '%s' }.reporterId", withArgs(task.getTaskId()), equalTo(task.getReporterId()))
+                    .body("find { it.taskId == '%s' }.description", withArgs(task.getTaskId()), equalTo(task.getDescription()))
+                    .body("find { it.taskId == '%s' }.confidential", withArgs(task.getTaskId()), equalTo(task.isConfidential()))
+                    .body("find { it.taskId == '%s' }.createdAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
+                    .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
+        }
+
+        List<String> statuses = response.jsonPath().getList("status");
+        assertThat(statuses, contains("COMPLETED"));
+        System.out.println("Statuses (IS_REPORTER_ACTIVE_TASK): " + statuses);
+        response.prettyPrint();
     }
 
     @Test
@@ -281,7 +343,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<String> taskIds = response.jsonPath().getList("taskId");
         assertTrue(taskIds == null || taskIds.isEmpty(), "Expected empty task list for new user");
-
         response.prettyPrint();
 
     }
@@ -305,7 +366,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo(USER_NOT_SPECIFIED))
+                .body("errorMessage", equalTo(String.format(USER_NOT_SPECIFIED)))
                 .extract().response();
 
         response.prettyPrint();
@@ -331,7 +392,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .when()
                 .get(GET_TASKS_URI)
                 .then()
-                .statusCode(404)
+                .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
                 .extract().response();
 
@@ -393,6 +454,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     public void clearDB() {
         executeDbQuery("DELETE FROM executors_tasks");
         executeDbQuery("DELETE FROM tasks");
+        executeDbQuery("DELETE FROM groups");
         executeDbQuery("DELETE FROM users");
     }
 
@@ -442,17 +504,5 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         }
 
         return tasks;
-    }
-
-    private boolean isActiveTask(TaskEntity task) {
-        String status = task.getStatus();
-        return status.equals(TaskStatus.TO_DO.name())
-                || status.equals(TaskStatus.IN_PROGRESS.name());
-    }
-
-    private boolean isCompletedTask(TaskEntity task) {
-        String status = task.getStatus();
-        return status.equals(TaskStatus.COMPLETED.name())
-                || status.equals(TaskStatus.CANCELLED.name());
     }
 }
