@@ -21,7 +21,7 @@ services:
       retries: 10
 
   app:
-    image: ghcr.io/a1be1/task-tracker-app:pr-18
+    image: ghcr.io/a1be1/task-tracker-app:pr-23
     container_name: task-tracker-app
     restart: unless-stopped
     depends_on:
