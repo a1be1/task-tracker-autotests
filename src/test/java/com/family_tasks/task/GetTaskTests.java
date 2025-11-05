@@ -33,14 +33,16 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         GroupEntity group = createUserWithGroup();
 
-        TaskEntity taskEntity = buildTaskEntity(group.getOwnerId());
+        int ownerId = group.getOwnerId();
+
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         taskEntity.setPriority(priority.name());
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
 
         Response response = given()
-                .queryParam("userId", group.getOwnerId())
+                .queryParam("userId", ownerId)
                 .when()
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
@@ -98,8 +100,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
 
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
-        int reporterId = insertUserIntoDB(buildUserEntity(group.getGroupId()));
+        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
@@ -134,9 +137,11 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         GroupEntity group = createUserWithGroup();
 
-        int executorId = insertUserIntoDB(buildUserEntity(group.getGroupId()));
+        int groupId = group.getGroupId();
+        int ownerId = group.getOwnerId();
+        int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
-        TaskEntity taskEntity = buildTaskEntity(group.getOwnerId());
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         taskEntity.setConfidential(true);
 
         insertTaskIntoDB(taskEntity);
@@ -173,22 +178,19 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
-
-        int executorId = insertUserIntoDB(buildUserEntity(groupId));
+        int ownerId = group.getOwnerId();
 
         GroupEntity otherGroup = createUserWithGroup();
         int notAllowedUserId = otherGroup.getOwnerId();
 
         assertNotEquals(groupId, otherGroup.getGroupId(), "notAllowedUser must be from a different group");
 
-        TaskEntity taskEntity = buildTaskEntity(group.getOwnerId());
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         taskEntity.setConfidential(true);
 
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
-
-        insertTaskExecutors(taskId, List.of(executorId));
 
         Response response = given()
                 .queryParam("userId", notAllowedUserId)
@@ -207,8 +209,9 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_missingUserId_thenBadRequest() {
 
         GroupEntity group = createUserWithGroup();
+        int ownerId = group.getOwnerId();
 
-        TaskEntity taskEntity = buildTaskEntity(group.getOwnerId());
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
@@ -228,12 +231,13 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     @Test
     public void getTaskById_invalidUserId_thenBadRequest() {
         GroupEntity group = createUserWithGroup();
+        int ownerId = group.getOwnerId();
 
-        TaskEntity taskEntity = buildTaskEntity(group.getOwnerId());
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
-        int invalidUserId = group.getOwnerId() +2;
+        int invalidUserId = ownerId +2;
 
         Response response = given()
                 .queryParam("userId", invalidUserId)
@@ -251,11 +255,12 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     @Test
     public void getTaskById_invalidTaskId_thenBadRequest() {
         GroupEntity group = createUserWithGroup();
+        int ownerId = group.getOwnerId();
 
         String invalidTaskId = UUID.randomUUID().toString();
 
         Response response = given()
-                .queryParam("userId", group.getOwnerId())
+                .queryParam("userId", ownerId)
                 .when()
                 .get(GET_TASKS_URI + "/" + invalidTaskId)
                 .then()
