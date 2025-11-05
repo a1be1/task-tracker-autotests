@@ -40,9 +40,10 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
+        int reporterId = taskEntity.getReporterId();
 
         Response response = given()
-                .queryParam("userId", ownerId)
+                .queryParam("userId", reporterId)
                 .when()
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
@@ -74,9 +75,10 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
+        int reporterId = taskEntity.getReporterId();
 
         Response response = given()
-                .queryParam("userId", ownerId)
+                .queryParam("userId", reporterId)
                 .when()
                 .get(GET_TASKS_URI + "/" + taskId)
                 .then()
@@ -100,15 +102,15 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
 
         GroupEntity group = createUserWithGroup();
-        int groupId = group.getGroupId();
 
-        int reporterId = insertUserIntoDB(buildUserEntity(groupId));
+        int ownerId = group.getOwnerId();
 
-        TaskEntity taskEntity = buildTaskEntity(reporterId);
+        TaskEntity taskEntity = buildTaskEntity(ownerId);
         taskEntity.setConfidential(true);
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
+        int reporterId = taskEntity.getReporterId();
 
         Response response = given()
                 .queryParam("userId", reporterId)
