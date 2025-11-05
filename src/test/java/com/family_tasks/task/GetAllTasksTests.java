@@ -2,6 +2,7 @@ package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
+import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
+import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
@@ -31,7 +33,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     @Test
     public void getAllAvailableTasks_returnsAllTasks() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -64,6 +67,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         }
         List<String> statuses = response.jsonPath().getList("status");
         System.out.println("Statuses (ALL_AVAILABLE): " + statuses);
+        assertThat(statuses, contains("TO_DO", "IN_PROGRESS", "COMPLETED", "CANCELLED"));
         assertThat(statuses.size(), equalTo(tasks.size()));
         response.prettyPrint();
     }
@@ -71,7 +75,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     @Test
     public void getAllClosedTasks() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -109,15 +114,18 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<String> statuses = response.jsonPath().getList("status");
         System.out.println("Statuses (ALL_CLOSED): " + statuses);
-        assertThat(statuses, contains("CANCELLED"));
+        assertThat(statuses, everyItem(equalTo("CANCELLED")));
         response.prettyPrint();
-
     }
 
     @Test
     public void getTasks_whenIsExecutorActiveTask() {
-        int reporterId = insertUserIntoDB(buildUserEntity());
-        int executorId = insertUserIntoDB(buildUserEntity());
+
+        GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
+
+        int reporterId = group.getOwnerId();
+        int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -172,7 +180,10 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
     @Test
     public void getTasks_whenIsReporterActiveTask() {
-        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        GroupEntity group = createUserWithGroup();
+
+        int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -223,8 +234,12 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
     @Test
     public void getTasks_whenIsExecutorCompletedTask() {
-        int reporterId = insertUserIntoDB(buildUserEntity());
-        int executorId = insertUserIntoDB(buildUserEntity());
+
+        GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
+
+        int reporterId = group.getOwnerId();
+        int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -273,13 +288,16 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<String> statuses = response.jsonPath().getList("status");
         assertThat(statuses, contains("COMPLETED"));
-        System.out.println("Statuses (IS_EXECUTOR_ACTIVE_TASK): " + statuses);
+        System.out.println("Statuses (IS_EXECUTOR_COMPLETED_TASK): " + statuses);
         response.prettyPrint();
     }
 
     @Test
     public void getTasks_whenIsReporterCompletedTask() {
-        int reporterId = insertUserIntoDB(buildUserEntity());
+
+        GroupEntity group = createUserWithGroup();
+
+        int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -324,13 +342,16 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         List<String> statuses = response.jsonPath().getList("status");
         assertThat(statuses, contains("COMPLETED"));
-        System.out.println("Statuses (IS_REPORTER_ACTIVE_TASK): " + statuses);
+        System.out.println("Statuses (IS_REPORTER_COMPLETED_TASK): " + statuses);
         response.prettyPrint();
     }
 
     @Test
-    public void getTasks_whenUserHasNoTasks_thenReturnEmptyList() {
-        int userId = insertUserIntoDB(buildUserEntity());
+    public void getAllAvailableTasks_whenUserHasNoTasks_thenReturnEmptyList() {
+
+        GroupEntity group = createUserWithGroup();
+
+        int userId = group.getOwnerId();
 
         Response response = given()
                 .queryParam("userId", userId)
@@ -342,7 +363,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .extract().response();
 
         List<String> taskIds = response.jsonPath().getList("taskId");
-        assertTrue(taskIds == null || taskIds.isEmpty(), "Expected empty task list for new user");
+        assertTrue(taskIds.isEmpty(), "Expected no tasks for new user");
+        System.out.println("Get ALL_AVAILABLE tasks when user has no tasks: ");
         response.prettyPrint();
 
     }
@@ -350,7 +372,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     @Test
     public void getAllAvailableTasks_withMissingUserId_thenBadRequest() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
 
         createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -369,14 +392,17 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .body("errorMessage", equalTo(String.format(USER_NOT_SPECIFIED)))
                 .extract().response();
 
+        System.out.println("Get ALL_AVAILABLE tasks with missing userId: ");
         response.prettyPrint();
     }
 
     @Test
     public void getAllAvailableTasks_withInvalidUserId_thenBadRequest() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
-        int invalidUserId = reporterId +2;
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
+
+        int invalidUserId = reporterId + 2;
 
         createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -393,16 +419,18 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .get(GET_TASKS_URI)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, invalidUserId)))
                 .extract().response();
 
+        System.out.println("Get ALL_AVAILABLE tasks with invalid userId: ");
         response.prettyPrint();
     }
 
     @Test
     public void getAllAvailableTasks_withInvalidFilter_thenBadRequest() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
 
         createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -422,13 +450,15 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .body("errorMessage", equalTo(String.format(TASK_FILTER_INVALID)))
                 .extract().response();
 
+        System.out.println("Get ALL_AVAILABLE tasks with invalid filter: ");
         response.prettyPrint();
     }
 
     @Test
     public void getAllAvailableTasks_withMissingFilter_thenBadRequest() {
 
-        int reporterId = insertUserIntoDB(buildUserEntity());
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
 
         createTasksForStatusesAndInsertIntoDB(
                 reporterId,
@@ -447,6 +477,63 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .body("errorMessage", equalTo(String.format(TASK_FILTER_NOT_SPECIFIED)))
                 .extract().response();
 
+        System.out.println("Get ALL_AVAILABLE tasks with missing filter: ");
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllAvailableTasks_withoutGroup_thenReturnEmptyList() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity(null));
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<?> tasks = response.jsonPath().getList("$");
+        assertTrue(tasks.isEmpty(), "Expected empty list when user has no group");
+        System.out.println("Get ALL_AVAILABLE tasks without group: ");
+        response.prettyPrint();
+    }
+
+    @Test
+    public void getAllClosedTasks_withoutGroup_thenReturnEmptyList() {
+
+        int reporterId = insertUserIntoDB(buildUserEntity(null));
+
+        createTasksForStatusesAndInsertIntoDB(
+                reporterId,
+                TaskStatus.TO_DO,
+                TaskStatus.IN_PROGRESS,
+                TaskStatus.COMPLETED,
+                TaskStatus.CANCELLED
+        );
+
+        Response response = given()
+                .queryParam("userId", reporterId)
+                .queryParam("filter", TaskFilter.ALL_CLOSED.name())
+                .when()
+                .get(GET_TASKS_URI)
+                .then()
+                .statusCode(200)
+                .extract().response();
+
+        List<?> tasks = response.jsonPath().getList("$");
+        assertTrue(tasks.isEmpty(), "Expected empty list when user has no group");
+        System.out.println("Get ALL_CLOSED tasks without group: ");
         response.prettyPrint();
     }
 
@@ -458,27 +545,13 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         executeDbQuery("DELETE FROM users");
     }
 
-    public static UserEntity buildUserEntity() {
+    public static UserEntity buildUserEntity(Integer groupId) {
         return UserEntity.builder()
                 .admin(true)
                 .name("user_" + randomString(6))
+                .groupId(groupId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
-    public static TaskEntity buildTaskEntity(Integer userId) {
-        return TaskEntity.builder()
-                .taskId(UUID.randomUUID().toString())
-                .name("task_" + randomString(5))
-                .description("desc_" + randomString(10))
-                .reporterId(userId)
-                .priority(TaskPriority.LOW.name())
-                .status(TaskStatus.TO_DO.name())
-                .confidential(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .deadline(LocalDate.now().plusDays(7))
                 .build();
     }
 
