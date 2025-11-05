@@ -9,11 +9,10 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserEntity {
-    private int id;
-    private String name;
-    private Boolean admin;
+public class GroupEntity {
     private Integer groupId;
+    private Integer ownerId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 }

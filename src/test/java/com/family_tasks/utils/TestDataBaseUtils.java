@@ -2,6 +2,7 @@ package com.family_tasks.utils;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
+import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.dto.user.UserEntity;
 
 import java.io.InputStream;
@@ -42,18 +43,46 @@ public class TestDataBaseUtils {
         }
     }
 
+    public static int insertGroupIntoDB(GroupEntity group) {
+        String sql = """
+                INSERT INTO groups (owner_id, created_at, updated_at, deleted_at)
+                                      VALUES (?, ?, ?, ?)
+                """;
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setInt(1, group.getOwnerId());
+            stmt.setTimestamp(2, Timestamp.valueOf(group.getCreatedAt()));
+            stmt.setTimestamp(3, Timestamp.valueOf(group.getUpdatedAt()));
+            stmt.setTimestamp(4, Timestamp.valueOf(group.getDeletedAt()));
+            stmt.executeUpdate();
+
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    int id = keys.getInt(1);
+                    group.setGroupId(id);
+                    return id;
+                }
+            }
+            return -1;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to insert group", e);
+        }
+    }
+
     public static int insertUserIntoDB(UserEntity userEntity) {
         String sql = """
-                INSERT INTO users (name, admin, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO users (name, admin, group_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, userEntity.getName());
             stmt.setBoolean(2, userEntity.getAdmin());
-            stmt.setTimestamp(3, Timestamp.valueOf(userEntity.getCreatedAt()));
-            stmt.setTimestamp(4, Timestamp.valueOf(userEntity.getUpdatedAt()));
+            stmt.setObject(3, userEntity.getGroupId());
+            stmt.setTimestamp(4, Timestamp.valueOf(userEntity.getCreatedAt()));
+            stmt.setTimestamp(5, Timestamp.valueOf(userEntity.getUpdatedAt()));
 
             stmt.executeUpdate();
 
@@ -67,6 +96,18 @@ public class TestDataBaseUtils {
             return -1;
         } catch (Exception e) {
             throw new RuntimeException("Failed to insert user", e);
+        }
+    }
+
+    public static void updateUserGroupIdInDB(UserEntity user) {
+        String sql = "UPDATE users SET group_id = ? WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, user.getGroupId());
+            stmt.setInt(2, user.getId());
+            stmt.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update user's groupId", e);
         }
     }
 
