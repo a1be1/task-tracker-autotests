@@ -1,0 +1,4 @@
+invalidJson;caseDescription
+"{""status"":""IN_PROGRESS"",""name"":""task3"",""description"":""description"",""priority"":""HIGH"",""executorIds"":[1],""confidential"":true,""deadline"":""deadline""}";Invalid deadline format
+"{""status"":""IN_PROGRESS"",""name"":""task4"",""description"":""description"",""priority"":""HIGH"",""executorIds"":""not-a-list"",""confidential"":true,""deadline"":""2025-12-01""}";Invalid executorIds type
+"{""status"":""IN_PROGRESS"",""name"":""task5"",""description"":""description"",""priority"":""HIGH"",""executorIds"":[1],""confidential"":""yes"",""deadline"":""2025-12-01""}";Invalid confidential type

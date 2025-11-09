@@ -288,7 +288,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .build();
     }
 
-    private static UserEntity buildUserEntity(Integer groupId) {
+    static UserEntity buildUserEntity(Integer groupId) {
         return UserEntity.builder()
                 .admin(true)
                 .name("user_" + randomString(6))
@@ -311,7 +311,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         return group;
     }
 
-    private TaskEntity buildTaskEntity(Integer userId) {
+    public static TaskEntity buildTaskEntity(Integer userId) {
         return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
                 .name("task_" + randomString(5))

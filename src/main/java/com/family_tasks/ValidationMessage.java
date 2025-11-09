@@ -28,4 +28,10 @@ public final class ValidationMessage {
     public static final String USER_ALREADY_IS_OWNER = "User with id %d is already the owner of another group.";
     public static final String USER_ALREADY_HAS_GROUP = "This user is already a member of the group.";
     public static final String GROUP_NOT_EXIST = "Group with id %d doesn't exist.";
+    public static final String TASK_DEADLINE_DATE_NOT_PRESENT_OR_FUTURE = "The deadline date must not be in the past";
+    public static final String ID_HAS_INVALID_FORMAT = "The provided ID has an invalid format.";
+    public static final String GROUP_NOT_SPECIFIED = "A group isn't specified.";
+    public static final String INCORRECT_REQUEST_FORMAT = "Incorrect request format. Check data types.";
+    public static final String CREATE_TASK_WITHOUT_GROUP = "To create a task you need to join a group or create a new one.";
+    public static final String CREATE_OR_UPDATE_TASK_FOR_OWN_GROUP = "A task can be created or updated only for users from own group.";
 }
