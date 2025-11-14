@@ -28,4 +28,7 @@ public final class ValidationMessage {
     public static final String USER_ALREADY_IS_OWNER = "User with id %d is already the owner of another group.";
     public static final String USER_ALREADY_HAS_GROUP = "This user is already a member of the group.";
     public static final String GROUP_NOT_EXIST = "Group with id %d doesn't exist.";
+    public static final String NAME_REQUIRED = "Name is required";
+    public static final String PRIORITY_REQUIRED = "Priority is required";
+
 }
