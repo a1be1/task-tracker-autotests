@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
@@ -44,7 +44,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -78,7 +78,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -112,7 +112,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -152,7 +152,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", executorId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -194,7 +194,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", notAllowedUserId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST,taskId)))
@@ -216,7 +216,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         Response response = given()
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(USER_NOT_SPECIFIED))
@@ -241,7 +241,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", invalidUserId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
@@ -261,7 +261,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + invalidTaskId)
+                .get(TASKS_URI + "/" + invalidTaskId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, invalidTaskId)))

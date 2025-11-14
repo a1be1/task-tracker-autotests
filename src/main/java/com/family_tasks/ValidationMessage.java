@@ -6,7 +6,7 @@ import static com.family_tasks.ValidationConstants.TASK_DESCRIPTION_MIN_LENGTH;
 public final class ValidationMessage {
 
     public static final String USER_NAME_NOT_SPECIFIED = "A user name isn't specified.";
-    public static final String USER_NAME_TOO_LONG = "A user name length shouldn't be more than " + USER_NAME_MAX_LENGTH + ".";
+    public static final String USER_NAME_TOO_LONG = "A user name length shouldn't be more than " + USER_NAME_MIN_LENGTH + ".";
     public static final String IS_ADMIN_NOT_SPECIFIED = "A user admin flag isn't specified.";
     public static final String USER_NOT_EXIST = "User with id %s doesn't exist.";
     public static final String USER_NOT_SPECIFIED = "A user isn't specified.";
