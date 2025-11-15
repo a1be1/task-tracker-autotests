@@ -5,7 +5,7 @@ public final class UrlConstant {
     public static final String USER_URI = "/v1/users";
     //endregion
 
-    public static final String GET_TASKS_URI = "/v1/tasks";
+    public static final String TASKS_URI = "/v1/tasks";
 
     public static final String GROUP_URL = "/v1/groups";
 }

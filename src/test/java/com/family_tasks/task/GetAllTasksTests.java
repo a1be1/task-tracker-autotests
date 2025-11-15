@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -48,7 +48,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -90,7 +90,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.ALL_CLOSED.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -150,7 +150,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", executorId)
                 .queryParam("filter", TaskFilter.IS_EXECUTOR_ACTIVE_TASK.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -204,7 +204,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.IS_REPORTER_ACTIVE_TASK.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -264,7 +264,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", executorId)
                 .queryParam("filter", TaskFilter.IS_EXECUTOR_COMPLETED_TASK.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -318,7 +318,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.IS_REPORTER_COMPLETED_TASK.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -357,7 +357,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", userId)
                 .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -386,7 +386,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_NOT_SPECIFIED)))
@@ -416,7 +416,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", invalidUserId)
                 .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, invalidUserId)))
@@ -444,7 +444,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", "ALL")
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(TASK_FILTER_INVALID)))
@@ -471,7 +471,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(TASK_FILTER_NOT_SPECIFIED)))
@@ -498,7 +498,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.ALL_AVAILABLE.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -526,7 +526,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .queryParam("filter", TaskFilter.ALL_CLOSED.name())
                 .when()
-                .get(GET_TASKS_URI)
+                .get(TASKS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
