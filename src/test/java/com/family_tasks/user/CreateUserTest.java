@@ -6,7 +6,7 @@ import com.family_tasks.utils.TestDataBaseUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
-import static com.family_tasks.UrlConstant.CREATE_USER_URI;
+import static com.family_tasks.UrlConstant.USER_URI;
 import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
@@ -31,7 +31,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .contentType("application/json")
                     .body(user)
                     .when()
-                    .post(CREATE_USER_URI)
+                    .post(USER_URI)
                     .then()
                     .statusCode(200)
                     .body("name", equalTo(user.getName()))
@@ -50,7 +50,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .contentType("application/json")
                     .body(user)
                     .when()
-                    .post(CREATE_USER_URI)
+                    .post(USER_URI)
                     .then()
                     .statusCode(400)
                     .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED));
@@ -68,7 +68,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                 .contentType("application/json")
                 .body(user)
                 .when()
-                .post(CREATE_USER_URI)
+                .post(USER_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED));
@@ -85,7 +85,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .contentType("application/json")
                     .body(user)
                     .when()
-                    .post(CREATE_USER_URI)
+                    .post(USER_URI)
                     .then()
                     .statusCode(400)
                     .body("errorMessage", equalTo(USER_NAME_TOO_LONG));
@@ -103,7 +103,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .contentType("application/json")
                     .body(user)
                     .when()
-                    .post(CREATE_USER_URI)
+                    .post(USER_URI)
                     .then()
                     .statusCode(400)
                     .body("errorMessage", equalTo(IS_ADMIN_NOT_SPECIFIED));
