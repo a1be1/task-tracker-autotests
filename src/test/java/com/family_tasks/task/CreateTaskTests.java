@@ -1,18 +1,23 @@
 package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
+import com.family_tasks.dto.task.TaskCreateRequest;
 import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskPriority;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
-import static com.family_tasks.UrlConstant.CREATE_TASKS_URI;
-import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Set;
+import static com.family_tasks.UrlConstant.TASKS_URI;
+import static com.family_tasks.ValidationConstants.USER_NAME_MIN_LENGTH;
+import static com.family_tasks.ValidationMessage.TASK_NAME_NOT_SPECIFIED;
+import static com.family_tasks.ValidationMessage.TASK_NAME_TOO_LONG;
+import static com.family_tasks.ValidationMessage.TASK_PRIORITY_NULL;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
@@ -22,78 +27,238 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
 
     @Test
     public void createTask_withRequiredFieldsOnly_shouldReturn200() {
-        // Arrange – create a valid user and group
-        GroupEntity group = createUserWithGroup();
-        int reporterId = group.getOwnerId();
+        int reporterId = createUserWithGroup();
 
-        // Build request body — matches successful Swagger 200 example
-        String json = String.format("""
-        {
-          "name": "task_%s",
-          "description": "Valid task description",
-          "priority": "LOW",
-          "reporterId": %d,
-          "executorIds": [%d],
-          "confidential": false,
-          "deadline": "2025-12-31"
-        }
-    """, randomString(5), reporterId, reporterId);
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .build();
 
-        // Act – send the POST
         Response response = given()
-                .log().all()
-                .queryParam("userId", reporterId)
-                .contentType("application/json")
-                .accept("application/json")
-                .body(json)
+                .contentType(ContentType.JSON)
+                .body(request)
                 .when()
-                .post(CREATE_TASKS_URI);
-
-        // Debug output
-        System.out.println("STATUS = " + response.getStatusCode());
-        response.prettyPrint();
-
-        // Assert – backend actually returns 200
-        response.then()
-                .log().ifValidationFails()
+                .post(TASKS_URI)
+                .then()
                 .statusCode(200)
                 .body("taskId", notNullValue())
-                .body("name", startsWith("task_"))
-                .body("priority", equalTo("LOW"))
-                .body("reporterId", equalTo(reporterId))
-                .body("confidential", equalTo(false))
-                .body("description", equalTo("Valid task description"))
-                .body("deadline", equalTo("2025-12-31"))
-                .body("status", equalTo("TO_DO"));
+                .body("name", equalTo(request.getName()))
+                .body("priority", equalTo(request.getPriority()))
+                .body("reporterId", equalTo(request.getReporterId()))
+                .body("confidential", equalTo(request.getConfidential()))
+                .body("description", equalTo(request.getDescription()))
+                .body("status", equalTo("TO_DO"))
+                .body("deadline", equalTo(request.getDeadline()))
+                .body("executorIds", empty())
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .extract()
+                .response();
+
+        System.out.println("STATUS = " + response.getStatusCode());
+        response.prettyPrint();
     }
 
+    @Test
+    public void createTask_nameLength100_shouldReturn200() {
+        // Arrange – valid reporter
+        int reporterId = createUserWithGroup();
+
+        // Build a 100-character name
+        String longName = randomString(100);
+
+        TaskCreateRequest request = TaskCreateRequest.builder()
+                .name(longName)
+                .description(null)
+                .priority(TaskPriority.LOW.name())
+                .reporterId(reporterId)
+                .executorIds(Set.of())
+                .confidential(false)
+                .deadline(LocalDate.now().toString())
+                .build();
+
+        // Act + Assert
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200)
+                .body("taskId", notNullValue())
+                .body("name", equalTo(request.getName()))
+                .body("priority", equalTo(request.getPriority()))
+                .body("reporterId", equalTo(request.getReporterId()))
+                .body("confidential", equalTo(request.getConfidential()))
+                .body("description", equalTo(request.getDescription()))
+                .body("status", equalTo("TO_DO"))
+                .body("deadline", equalTo(request.getDeadline()))
+                .body("executorIds", empty())
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .extract()
+                .response();
+
+        System.out.println("STATUS = " + response.getStatusCode());
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_priorityLow_shouldReturn200() {
+        // Arrange – valid reporter
+        int reporterId = createUserWithGroup();
+
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .priority(TaskPriority.LOW.name()) // explicit LOW priority
+                .build();
+
+        // Act + Assert
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200)
+                .body("taskId", notNullValue())
+                .body("name", equalTo(request.getName()))
+                .body("priority", equalTo(request.getPriority()))
+                .body("reporterId", equalTo(request.getReporterId()))
+                .body("confidential", equalTo(request.getConfidential()))
+                .body("description", equalTo(request.getDescription()))
+                .body("status", equalTo("TO_DO"))
+                .body("deadline", equalTo(request.getDeadline()))
+                .body("executorIds", empty())
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .extract()
+                .response();
+
+        System.out.println("STATUS = " + response.getStatusCode());
+        response.prettyPrint();
+    }
 
     @Test
     public void createTask_missingRequiredField_name_thenBadRequest() {
-        GroupEntity group = createUserWithGroup();
-        int reporterId = group.getOwnerId();
+            // Arrange – create a valid user and group
+            int reporterId = createUserWithGroup();
+            TaskCreateRequest request = taskCreateRequest(reporterId)
+                    .name(null)
+                    .build();
 
-        String json = String.format("""
-        {
-          "priority": "%s",
-          "reporterId": %d,
-          "confidential": false
-        }
-    """, TaskPriority.LOW.name(), reporterId);
-
-        Response response = given()
+            Response response = given()
                 .header("Content-Type", "application/json")
-                .body(json)
+                .body(request)
                 .when()
-                .post(CREATE_TASKS_URI)
+                .post(TASKS_URI)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", containsStringIgnoringCase("name"))
+                .body("errorMessage", equalTo(TASK_NAME_NOT_SPECIFIED))
                 .extract()
                 .response();
 
         response.prettyPrint();
     }
+
+    @Test
+    public void createTask_nameLength101_shouldReturn400() {
+        // Arrange – valid reporter
+        int reporterId = createUserWithGroup();
+
+        // Build a 101-character name
+        String tooLongName = randomString(101);
+
+        TaskCreateRequest request = TaskCreateRequest.builder()
+                .name(tooLongName)
+                .description(null)
+                .priority(TaskPriority.LOW.name())
+                .reporterId(reporterId)
+                .executorIds(Set.of())
+                .confidential(false)
+                .deadline(LocalDate.now().toString())
+                .build();
+
+        // Act + Assert
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(TASK_NAME_TOO_LONG))
+                .extract()
+                .response();
+
+        System.out.println("STATUS = " + response.getStatusCode());
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_priorityEmpty_shouldReturn400() {
+        // Arrange – valid reporter
+        int reporterId = createUserWithGroup();
+
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .priority("") // empty priority
+                .build();
+
+        // Act + Assert
+        Response response = given()
+                .header("Content-Type", "application/json")
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(TASK_PRIORITY_NULL))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+
+    private TaskCreateRequest.TaskCreateRequestBuilder taskCreateRequest(Integer reporterId) {
+            return TaskCreateRequest.builder()
+                    .name("name_" + randomString(USER_NAME_MIN_LENGTH))
+                    .description(null)
+                    .priority(TaskPriority.LOW.name())
+                    .reporterId(reporterId)
+                    .executorIds(Set.of())
+                    .confidential(false)
+                    .deadline(LocalDate.now().toString());
+        }
+
+        public UserEntity buildUserEntity(Integer groupId) {
+            return UserEntity.builder()
+                    .admin(true)
+                    .name("user_" + randomString(6))
+                    .groupId(groupId)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        private static GroupEntity buildGroupEntity(Integer ownerId) {
+            return GroupEntity.builder()
+                    .ownerId(ownerId)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .deletedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        private Integer createUserWithGroup() {
+
+            UserEntity owner = buildUserEntity(null);
+            int ownerId = insertUserIntoDB(owner);
+
+            GroupEntity group = buildGroupEntity(ownerId);
+            int groupId = insertGroupIntoDB(group);
+
+            owner.setGroupId(groupId);
+            updateUserGroupIdInDB(owner);
+            return owner.getId();
+        }
 
     @AfterEach
     public void clearDB() {
