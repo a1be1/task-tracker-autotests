@@ -4,7 +4,7 @@ import lombok.*;
 import java.util.Set;
 
 @Getter
-@Builder(toBuilder = true)
+@Builder
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor

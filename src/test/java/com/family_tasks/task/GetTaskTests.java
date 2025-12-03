@@ -274,6 +274,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     @AfterAll
     public static void clearDB() {
         executeDbQuery("DELETE FROM executors_tasks");
+        executeDbQuery("DELETE FROM rewards");
         executeDbQuery("DELETE FROM tasks");
         executeDbQuery("DELETE FROM groups");
         executeDbQuery("DELETE FROM users");

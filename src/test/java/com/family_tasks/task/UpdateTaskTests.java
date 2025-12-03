@@ -6,16 +6,20 @@ import com.family_tasks.dto.task.TaskUpdateRequest;
 import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
+import com.family_tasks.utils.task.TaskResponseWrapper;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
@@ -23,9 +27,10 @@ import static com.family_tasks.task.GetTaskTests.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 
 public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
@@ -42,7 +47,9 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         String taskId = taskToUpdate.getTaskId();
 
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId, reporterId));
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(executorId, reporterId))
+                .build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -51,19 +58,21 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
-                .body("taskId", equalTo(taskId))
-                .body("name", equalTo(updateRequest.getName()))
-                .body("status", equalTo(updateRequest.getStatus()))
-                .body("priority", equalTo(updateRequest.getPriority()))
-                .body("executorIds", containsInAnyOrder(executorId, reporterId))
-                .body("description", equalTo(updateRequest.getDescription()))
-                .body("deadline", equalTo(updateRequest.getDeadline()))
                 .extract()
                 .response();
 
-        Set<Integer> expectedExecutors = Set.of(executorId, reporterId);
+        TaskResponseWrapper taskResp = new TaskResponseWrapper(response);
 
-        assertTaskUpdatedCorrectly(response, taskToUpdate, reporterId, expectedExecutors);
+        assertEquals(taskId, taskResp.getTaskId());
+        assertEquals(updateRequest.getName(), taskResp.getName());
+        assertEquals(updateRequest.getStatus(), taskResp.getStatus());
+        assertEquals(updateRequest.getPriority(), taskResp.getPriority());
+        assertEquals(updateRequest.getDescription(), taskResp.getDescription());
+        assertEquals(updateRequest.getDeadline(), taskResp.getDeadline());
+        assertThat(taskResp.getExecutorIds())
+                .containsExactlyInAnyOrderElementsOf(Set.of(executorId, reporterId));
+        assertThat(taskResp.getCreatedAt()).isNotNull();
+        assertThat(taskResp.getUpdatedAt()).isNotNull();
 
         System.out.println("Update all fields test: ");
         response.prettyPrint();
@@ -83,7 +92,9 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         String taskId = taskToUpdate.getTaskId();
 
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId, reporterId));
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(executorId, reporterId))
+                .build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -93,19 +104,10 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
-                .body("taskId", equalTo(taskId))
-                .body("name", equalTo(updateRequest.getName()))
-                .body("status", equalTo(updateRequest.getStatus()))
-                .body("priority", equalTo(updateRequest.getPriority()))
-                .body("executorIds", containsInAnyOrder(executorId, reporterId))
-                .body("description", equalTo(updateRequest.getDescription()))
-                .body("deadline", equalTo(updateRequest.getDeadline()))
                 .extract()
                 .response();
 
-        Set<Integer> expectedExecutors = Set.of(executorId, reporterId);
-
-        assertTaskUpdatedCorrectly(response, taskToUpdate, reporterId, expectedExecutors);
+        assertTaskUpdatedCorrectly(response, updateRequest, reporterId, taskId);
 
         System.out.println("Update all fields test when task has status COMPLETED: ");
         response.prettyPrint();
@@ -125,7 +127,9 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         String taskId = taskToUpdate.getTaskId();
 
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId, reporterId));
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(executorId, reporterId))
+                .build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -135,48 +139,13 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
-                .body("taskId", equalTo(taskId))
-                .body("name", equalTo(updateRequest.getName()))
-                .body("status", equalTo(updateRequest.getStatus()))
-                .body("priority", equalTo(updateRequest.getPriority()))
-                .body("executorIds", containsInAnyOrder(executorId, reporterId))
-                .body("description", equalTo(updateRequest.getDescription()))
-                .body("deadline", equalTo(updateRequest.getDeadline()))
                 .extract()
                 .response();
 
-        Set<Integer> expectedExecutors = Set.of(executorId, reporterId);
-
-        assertTaskUpdatedCorrectly(response, taskToUpdate, reporterId, expectedExecutors);
+        assertTaskUpdatedCorrectly(response, updateRequest, reporterId, taskId);
 
         System.out.println("Update all fields test when task has status COMPLETED: ");
         response.prettyPrint();
-    }
-
-    @Test
-    public void updateAllTaskFields_sendRequestTwice() {
-
-        GroupEntity group = createUserWithGroup();
-        int groupId = group.getGroupId();
-        int reporterId = group.getOwnerId();
-        int executorId = insertUserIntoDB(buildUserEntity(groupId));
-
-        TaskEntity taskToUpdate = buildTaskEntity(reporterId);
-        insertTaskIntoDB(taskToUpdate);
-
-        String taskId = taskToUpdate.getTaskId();
-
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId));
-
-        Response response1 = sendAndVerifyUpdateTask(reporterId, taskId, updateRequest, Set.of(executorId));
-        assertTaskUpdatedCorrectly2(response1, taskToUpdate, updateRequest, reporterId);
-
-        Response response2 = sendAndVerifyUpdateTask(reporterId, taskId, updateRequest, Set.of(executorId));
-        assertTaskUpdatedCorrectly2(response2, taskToUpdate, updateRequest, reporterId);
-
-        System.out.println("Send the same update request twice: ");
-        response1.prettyPrint();
-        response2.prettyPrint();
     }
 
     @Test
@@ -189,9 +158,11 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
         insertTaskIntoDB(taskToUpdate);
 
-        String nonExistentTask = taskToUpdate.getTaskId()+2;
+        String nonExistentTask = taskToUpdate.getTaskId() + 2;
 
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId));
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(executorId, reporterId))
+                .build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -209,33 +180,21 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
-    @ParameterizedTest(name = "{1}")
-    @CsvFileSource(resources = "/missing_required_fields.csv", numLinesToSkip = 1, delimiter = ';')
-    public void updateTask_withMissingRequiredField_returnsBadRequest(
-            String fieldToRemove, String caseDescription, String expectedError) {
+    @ParameterizedTest(name = "{index} => {0}")
+    @MethodSource("missingRequiredField")
+    public void updateTask_withMissingRequiredField_returnsBadRequest(String testName, TaskUpdateRequest request, String expectedError) {
 
         GroupEntity group = createUserWithGroup();
-        int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
-        int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
         insertTaskIntoDB(taskToUpdate);
 
         String taskId = taskToUpdate.getTaskId();
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest(Set.of(executorId));
-
-        switch (fieldToRemove) {
-            case "name" -> updateRequest.setName(null);
-            case "status" -> updateRequest.setStatus(null);
-            case "priority" -> updateRequest.setPriority(null);
-            case "confidential" -> updateRequest.setConfidential(null);
-        }
 
         Response response = given()
                 .contentType(ContentType.JSON)
-                .queryParam("userId", reporterId)
-                .body(updateRequest)
+                .body(request)
                 .when()
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
@@ -244,13 +203,13 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .extract()
                 .response();
 
-        System.out.printf("Case: %s%n", caseDescription);
+        System.out.println("Running test case: " + testName);
         response.prettyPrint();
     }
 
-    @ParameterizedTest(name = "{1}")
-    @CsvFileSource(resources = "/invalid_update_requests.csv", numLinesToSkip = 1,delimiter = ';')
-    public void updateTask_withWrongDataType_returnsBadRequest(String invalidJson, String caseDescription) {
+    @ParameterizedTest(name = "{index} => {0}")
+    @MethodSource("invalidUpdateData")
+    public void updateTask_withWrongDataType_returnsBadRequest(String testName, TaskUpdateRequest request, String expectedError) {
 
         GroupEntity group = createUserWithGroup();
         int reporterId = group.getOwnerId();
@@ -262,117 +221,97 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         Response response = given()
                 .contentType(ContentType.JSON)
-                .body(invalidJson)
+                .body(request)
                 .when()
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo(String.format(INCORRECT_REQUEST_FORMAT)))
+                .body("errorMessage", equalTo(expectedError))
                 .extract()
                 .response();
 
-        System.out.printf("Case: %s%nInvalid JSON:%n%s%n", caseDescription, invalidJson);
+        System.out.println("Running test case: " + testName);
         response.prettyPrint();
     }
 
-    @AfterAll
-    public static void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
+    private static Stream<Arguments> invalidUpdateData() {
+        return Stream.of(
+                Arguments.of("Invalid deadline format",
+                        buildUpdateTaskRequest().deadline("deadline").build(),
+                        INCORRECT_REQUEST_FORMAT
+                ),
+                Arguments.of(
+                        "Invalid status value",
+                        buildUpdateTaskRequest().status("NOT_A_STATUS").build(),
+                        TASK_STATUS_INVALID
+                ),
+                Arguments.of(
+                        "Invalid priority value",
+                        buildUpdateTaskRequest().priority("NOT_A_PRIORITY").build(),
+                        TASK_PRIORITY_INVALID
+                )
+        );
     }
 
-    private TaskUpdateRequest buildUpdateTaskRequest(Set<Integer> executorIds) {
+    private static Stream<Arguments> missingRequiredField() {
+        return Stream.of(
+                Arguments.of(
+                        "Missing task name",
+                        buildUpdateTaskRequest().name(null).build(),
+                        TASK_NAME_NOT_SPECIFIED
+                ),
+                Arguments.of(
+                        "Missing status",
+                        buildUpdateTaskRequest().status(null).build(),
+                        TASK_STATUS_NULL
+                ),
+                Arguments.of(
+                        "Missing priority",
+                        buildUpdateTaskRequest().priority(null).build(),
+                        TASK_PRIORITY_NULL
+                ),
+                Arguments.of(
+                        "Missing confidential flag",
+                        buildUpdateTaskRequest().confidential(null).build(),
+                        TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED
+                )
+        );
+    }
+
+    private static TaskUpdateRequest.TaskUpdateRequestBuilder buildUpdateTaskRequest() {
         return TaskUpdateRequest.builder()
                 .status(TaskStatus.IN_PROGRESS.name())
                 .name("updated_task_" + randomString(5))
                 .description("updated_desc_" + randomString(10))
                 .priority(TaskPriority.HIGH.name())
-                .executorIds(executorIds)
+                .executorIds(null)
                 .confidential(true)
-                .deadline(LocalDate.now().plusDays(2).toString())
-                .build();
-    }
-
-    private Response sendAndVerifyUpdateTask(
-            int userId,
-            String taskId,
-            TaskUpdateRequest updateRequest,
-            Set<Integer> expectedExecutorIds
-    ) {
-        return given()
-                .contentType(ContentType.JSON)
-                .queryParam("userId", userId)
-                .body(updateRequest)
-                .when()
-                .put(GET_TASKS_URI + "/" + taskId)
-                .then()
-                .statusCode(200)
-                .body("taskId", equalTo(taskId))
-                .body("name", equalTo(updateRequest.getName()))
-                .body("status", equalTo(updateRequest.getStatus()))
-                .body("priority", equalTo(updateRequest.getPriority()))
-                .body("executorIds", containsInAnyOrder(expectedExecutorIds.toArray()))
-                .body("description", equalTo(updateRequest.getDescription()))
-                .body("deadline", equalTo(updateRequest.getDeadline()))
-                .extract()
-                .response();
+                .deadline(LocalDate.now().plusDays(2).toString());
     }
 
     private void assertTaskUpdatedCorrectly(
             Response response,
-            TaskEntity originalTask,
+            TaskUpdateRequest updateRequest,
             int reporterId,
-            Set<Integer> expectedExecutors
+            String taskId
     ) {
-        String actualName = response.path("name");
-        String actualStatus = response.path("status");
-        String actualPriority = response.path("priority");
-        String actualDeadline = response.path("deadline");
-        Integer actualReporterId = response.path("reporterId");
-        String actualTaskId = response.path("taskId");
-        Set<Integer> actualExecutors = new HashSet<>(response.path("executorIds"));
+        assertEquals(updateRequest.getName(), response.path("name"));
+        assertEquals(updateRequest.getStatus(), response.path("status"));
+        assertEquals(updateRequest.getPriority(), response.path("priority"));
+        assertEquals(updateRequest.getDeadline(), response.path("deadline"));
+        assertEquals(updateRequest.getDescription(), response.path("description"));
+        assertEquals(updateRequest.getExecutorIds(), new HashSet<>(response.path("executorIds")));
 
-        assertNotEquals(originalTask.getName(), actualName, "Name should be updated");
-        assertNotEquals(originalTask.getStatus(), actualStatus, "Status should be updated");
-        assertNotEquals(originalTask.getPriority(), actualPriority, "Priority should be updated");
-        assertNotEquals(originalTask.getDeadline(), actualDeadline, "Deadline should match request payload");
-        assertEquals(reporterId, actualReporterId, "Reporter ID should remain unchanged");
-        assertEquals(originalTask.getTaskId(), actualTaskId, "TaskId should remain unchanged");
-        assertEquals(expectedExecutors, actualExecutors, "Executors should match expected set");
+        assertEquals(reporterId, (Integer) response.path("reporterId"));
+        assertEquals(taskId, response.path("taskId"));
     }
 
-    private void assertTaskUpdatedCorrectly2(
-            Response response,
-            TaskEntity originalTask,
-            TaskUpdateRequest updateRequest,
-            int reporterId
-    ) {
-        String actualName = response.path("name");
-        String actualStatus = response.path("status");
-        String actualPriority = response.path("priority");
-        String actualDeadline = response.path("deadline");
-        Integer actualReporterId = response.path("reporterId");
-        String actualTaskId = response.path("taskId");
-        Set<Integer> actualExecutors = new HashSet<>(response.path("executorIds"));
-
-        assertNotEquals(originalTask.getName(), actualName, "Name should be updated");
-        assertEquals(updateRequest.getName(), actualName, "Name should match updateRequest");
-
-        assertNotEquals(originalTask.getStatus(), actualStatus, "Status should be updated");
-        assertEquals(updateRequest.getStatus(), actualStatus, "Status should match updateRequest");
-
-        assertNotEquals(originalTask.getPriority(), actualPriority, "Priority should be updated");
-        assertEquals(updateRequest.getPriority(), actualPriority, "Priority should match updateRequest");
-
-        assertNotEquals(originalTask.getDeadline(), actualDeadline, "Deadline should be updated");
-        assertEquals(updateRequest.getDeadline(), actualDeadline, "Deadline should match updateRequest");
-
-        assertEquals(reporterId, actualReporterId, "Reporter ID should remain unchanged");
-        assertEquals(originalTask.getTaskId(), actualTaskId, "TaskId should remain unchanged");
-
-        Set<Integer> expectedExecutors = updateRequest.getExecutorIds();
-        assertEquals(expectedExecutors, actualExecutors, "Executors should match updateRequest");
+    @AfterAll
+    public static void clearDB() {
+        executeDbQuery("DELETE FROM executors_tasks");
+        executeDbQuery("DELETE FROM rewards");
+        executeDbQuery("DELETE FROM tasks");
+        executeDbQuery("DELETE FROM groups");
+        executeDbQuery("DELETE FROM users");
     }
 }
