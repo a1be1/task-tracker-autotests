@@ -13,7 +13,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
@@ -48,7 +47,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         String taskId = taskToUpdate.getTaskId();
 
         TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
-                .executorIds(Set.of(executorId, reporterId))
+                .executorIds(Set.of(executorId))
                 .build();
 
         Response response = given()
@@ -69,8 +68,9 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         assertEquals(updateRequest.getPriority(), taskResp.getPriority());
         assertEquals(updateRequest.getDescription(), taskResp.getDescription());
         assertEquals(updateRequest.getDeadline(), taskResp.getDeadline());
+        assertEquals(updateRequest.getRewardsPoints(), taskResp.getRewardsPoints());
         assertThat(taskResp.getExecutorIds())
-                .containsExactlyInAnyOrderElementsOf(Set.of(executorId, reporterId));
+                .containsExactlyInAnyOrderElementsOf(Set.of(executorId));
         assertThat(taskResp.getCreatedAt()).isNotNull();
         assertThat(taskResp.getUpdatedAt()).isNotNull();
 
@@ -249,6 +249,11 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                         "Invalid priority value",
                         buildUpdateTaskRequest().priority("NOT_A_PRIORITY").build(),
                         TASK_PRIORITY_INVALID
+                ),
+                Arguments.of(
+                        "Invalid rewardsPoints value",
+                        buildUpdateTaskRequest().rewardsPoints(0).build(),
+                        REWARDS_POINTS_POSITIVE
                 )
         );
     }
@@ -284,9 +289,10 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .name("updated_task_" + randomString(5))
                 .description("updated_desc_" + randomString(10))
                 .priority(TaskPriority.HIGH.name())
-                .executorIds(null)
+                .executorIds(Set.of())
                 .confidential(true)
-                .deadline(LocalDate.now().plusDays(2).toString());
+                .deadline(LocalDate.now().plusDays(2).toString())
+                .rewardsPoints(null);
     }
 
     private void assertTaskUpdatedCorrectly(
@@ -301,7 +307,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         assertEquals(updateRequest.getDeadline(), response.path("deadline"));
         assertEquals(updateRequest.getDescription(), response.path("description"));
         assertEquals(updateRequest.getExecutorIds(), new HashSet<>(response.path("executorIds")));
-
+        assertEquals(updateRequest.getRewardsPoints(), response.path("rewardsPoints"));
         assertEquals(reporterId, (Integer) response.path("reporterId"));
         assertEquals(taskId, response.path("taskId"));
     }

@@ -24,6 +24,7 @@ public class TaskEntity {
     private String priority;
     private Integer reporterId;
     private boolean confidential;
+    private Integer rewardsPoints;
     private LocalDate deadline;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

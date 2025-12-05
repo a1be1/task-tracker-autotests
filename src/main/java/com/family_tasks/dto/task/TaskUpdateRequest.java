@@ -15,5 +15,6 @@ public class TaskUpdateRequest {
     private String priority;
     private Set<Integer> executorIds;
     private Boolean confidential;
+    private Integer rewardsPoints;
     private String deadline;
 }

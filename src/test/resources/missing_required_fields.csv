@@ -1,5 +1,0 @@
-fieldToRemove;caseDescription;expectedError
-name;Missing task name;A task name isn't specified.
-status;Missing status;Status must be specified.
-priority;Missing priority;Priority must be specified.
-confidential;Missing confidential status;A task confidential status isn't specified.

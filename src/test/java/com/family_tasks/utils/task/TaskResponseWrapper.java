@@ -41,6 +41,8 @@ public class TaskResponseWrapper {
         return response.path("description");
     }
 
+    public String getRewardsPoints() {return response.path("rewardsPoints");}
+
     public Set<Integer> getExecutorIds() {
         return new HashSet<>(response.path("executorIds"));
     }

@@ -34,4 +34,13 @@ public final class ValidationMessage {
     public static final String INCORRECT_REQUEST_FORMAT = "Incorrect request format. Check data types.";
     public static final String CREATE_TASK_WITHOUT_GROUP = "To create a task you need to join a group or create a new one.";
     public static final String CREATE_OR_UPDATE_TASK_FOR_OWN_GROUP = "A task can be created or updated only for users from own group.";
+    public static final String REWARDS_POINTS_POSITIVE = "Reward points cannot be negative.";
+    public static final String VALIDATION_FAILED = "Validation failed.";
+    public static final String REWARD_NOT_EXIST = "Reward with id %s doesn't exist.";
+    public static final String REWARD_DESCRIPTION_TOO_LONG = "A reward description length shouldn't be more than " + REWARD_DESCRIPTION_MAX_LENGTH + ".";
+    public static final String REWARD_DESCRIPTION_TOO_SHORT = "A task description length shouldn't be less than " + REWARD_DESCRIPTION_MIN_LENGTH + ".";
+    public static final String USER_NOT_ADMIN = "Only the admin can edit rewards.";
+    public static final String REWARD_AMOUNT_NULL = "Amount must be specified.";
+    public static final String REWARD_DESCRIPTION_NULL = "Description must be specified.";
+
 }

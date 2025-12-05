@@ -321,6 +321,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .priority(TaskPriority.LOW.name())
                 .status(TaskStatus.TO_DO.name())
                 .confidential(false)
+                .rewardsPoints(0)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deadline(LocalDate.now().plusDays(7))
