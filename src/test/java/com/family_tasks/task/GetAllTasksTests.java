@@ -8,7 +8,6 @@ import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -19,14 +18,14 @@ import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
-import static com.family_tasks.utils.TestDataBaseUtils.*;
+import static com.family_tasks.utils.TestDataBaseUtils.*;   // ← REQUIRED
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.withArgs;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
@@ -65,6 +64,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                     .body("find { it.taskId == '%s' }.updatedAt", withArgs(task.getTaskId()), notNullValue())
                     .body("find { it.taskId == '%s' }.deadline", withArgs(task.getTaskId()), equalTo(task.getDeadline().toString()));
         }
+
         List<String> statuses = response.jsonPath().getList("status");
         System.out.println("Statuses (ALL_AVAILABLE): " + statuses);
         assertThat(statuses, contains("TO_DO", "IN_PROGRESS", "COMPLETED", "CANCELLED"));
@@ -123,8 +123,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
-
         int reporterId = group.getOwnerId();
+
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
@@ -137,13 +137,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         for (TaskEntity task : tasks) {
             insertTaskExecutors(task.getTaskId(), List.of(executorId));
-        }
-
-        List<TaskEntity> activeTasks = new ArrayList<>();
-        for (TaskEntity t : tasks) {
-            if (t.isActiveTask()) {
-                activeTasks.add(t);
-            }
         }
 
         Response response = given()
@@ -182,7 +175,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     public void getTasks_whenIsReporterActiveTask() {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
@@ -192,13 +184,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 TaskStatus.COMPLETED,
                 TaskStatus.CANCELLED
         );
-
-        List<TaskEntity> activeTasks = new ArrayList<>();
-        for (TaskEntity t : tasks) {
-            if (t.isActiveTask()) {
-                activeTasks.add(t);
-            }
-        }
 
         Response response = given()
                 .queryParam("userId", reporterId)
@@ -237,8 +222,8 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
-
         int reporterId = group.getOwnerId();
+
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
@@ -251,13 +236,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
 
         for (TaskEntity task : tasks) {
             insertTaskExecutors(task.getTaskId(), List.of(executorId));
-        }
-
-        List<TaskEntity> completedTasks = new ArrayList<>();
-        for (TaskEntity t : tasks) {
-            if (t.isCompletedTask()) {
-                completedTasks.add(t);
-            }
         }
 
         Response response = given()
@@ -296,7 +274,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     public void getTasks_whenIsReporterCompletedTask() {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         List<TaskEntity> tasks = createTasksForStatusesAndInsertIntoDB(
@@ -306,13 +283,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                 TaskStatus.COMPLETED,
                 TaskStatus.CANCELLED
         );
-
-        List<TaskEntity> completedTasks = new ArrayList<>();
-        for (TaskEntity t : tasks) {
-            if (t.isCompletedTask()) {
-                completedTasks.add(t);
-            }
-        }
 
         Response response = given()
                 .queryParam("userId", reporterId)
@@ -350,7 +320,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
     public void getAllAvailableTasks_whenUserHasNoTasks_thenReturnEmptyList() {
 
         GroupEntity group = createUserWithGroup();
-
         int userId = group.getOwnerId();
 
         Response response = given()
@@ -366,7 +335,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         assertTrue(taskIds.isEmpty(), "Expected no tasks for new user");
         System.out.println("Get ALL_AVAILABLE tasks when user has no tasks: ");
         response.prettyPrint();
-
     }
 
     @Test
@@ -535,24 +503,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         assertTrue(tasks.isEmpty(), "Expected empty list when user has no group");
         System.out.println("Get ALL_CLOSED tasks without group: ");
         response.prettyPrint();
-    }
-
-    @AfterEach
-    public void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
-    }
-
-    public static UserEntity buildUserEntity(Integer groupId) {
-        return UserEntity.builder()
-                .admin(true)
-                .name("user_" + randomString(6))
-                .groupId(groupId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
     }
 
     private List<TaskEntity> createTasksForStatusesAndInsertIntoDB(int userId, TaskStatus... statuses) {

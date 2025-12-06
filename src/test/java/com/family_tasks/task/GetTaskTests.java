@@ -3,11 +3,9 @@ package com.family_tasks.task;
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.user.GroupEntity;
-import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -32,7 +30,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnTaskWithGivenPriority(TaskPriority priority) {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
@@ -100,7 +97,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
@@ -135,14 +131,13 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_withConfidentialTrue_forExecutor() {
 
         GroupEntity group = createUserWithGroup();
-
         int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
+
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
-
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
@@ -186,7 +181,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
-
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
@@ -197,7 +191,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST,taskId)))
+                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, taskId)))
                 .extract()
                 .response();
 
@@ -224,7 +218,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .response();
 
         response.prettyPrint();
-
     }
 
     @Test
@@ -236,7 +229,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
-        int invalidUserId = reporterId +2;
+        int invalidUserId = reporterId + 2;
 
         Response response = given()
                 .queryParam("userId", invalidUserId)
@@ -244,7 +237,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, invalidUserId)))
                 .extract()
                 .response();
 
@@ -271,46 +264,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
-    @AfterAll
-    public static void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
-    }
-
-    private static GroupEntity buildGroupEntity(Integer ownerId) {
-        return GroupEntity.builder()
-                .ownerId(ownerId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .deletedAt(LocalDateTime.now())
-                .build();
-    }
-
-    private static UserEntity buildUserEntity(Integer groupId) {
-        return UserEntity.builder()
-                .admin(true)
-                .name("user_" + randomString(6))
-                .groupId(groupId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
-    public static GroupEntity createUserWithGroup() {
-
-        UserEntity owner = buildUserEntity(null);
-        int ownerId = insertUserIntoDB(owner);
-
-        GroupEntity group = buildGroupEntity(ownerId);
-        int groupId = insertGroupIntoDB(group);
-
-        owner.setGroupId(groupId);
-        updateUserGroupIdInDB(owner);
-        return group;
-    }
-
     private TaskEntity buildTaskEntity(Integer userId) {
         return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
@@ -325,5 +278,4 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .deadline(LocalDate.now().plusDays(7))
                 .build();
     }
-
 }
