@@ -11,7 +11,7 @@ public final class ValidationMessage {
     public static final String USER_NOT_EXIST = "User with id %s doesn't exist.";
     public static final String USER_NOT_SPECIFIED = "A user isn't specified.";
     public static final String TASK_NAME_NOT_SPECIFIED = "A task name isn't specified.";
-    public static final String TASK_NAME_TOO_LONG = "A task name length shouldn't be more than" + TASK_NAME_MAX_LENGTH + ".";
+    public static final String TASK_NAME_TOO_LONG = "A task name length shouldn't be more than " + TASK_NAME_MAX_LENGTH + ".";
     public static final String TASK_DESCRIPTION_TOO_LONG = "A task description length shouldn't be more than " + TASK_DESCRIPTION_MAX_LENGTH + ".";
     public static final String TASK_DESCRIPTION_TOO_SHORT = "A task description length shouldn't be less than " + TASK_DESCRIPTION_MIN_LENGTH + ".";
     public static final String TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED = "A task confidential status isn't specified.";

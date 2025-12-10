@@ -9,10 +9,10 @@ import com.family_tasks.enums.TaskStatus;
 import com.family_tasks.utils.task.TaskResponseWrapper;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
@@ -21,15 +21,15 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.ValidationConstants.*;
 import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.task.GetTaskTests.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
@@ -37,6 +37,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
     public void updateAllTaskFields() {
 
         GroupEntity group = createUserWithGroup();
+
         int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
@@ -78,16 +79,18 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
-    @Test
-    public void updateCompletedTask() {
+    @EnumSource(value = TaskStatus.class)
+    @ParameterizedTest
+    public void updateTaskWithGivenStatus(TaskStatus status) {
 
         GroupEntity group = createUserWithGroup();
+
         int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
-        taskToUpdate.setStatus(TaskStatus.COMPLETED.name());
+        taskToUpdate.setStatus(status.name());
         insertTaskIntoDB(taskToUpdate);
 
         String taskId = taskToUpdate.getTaskId();
@@ -109,48 +112,15 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         assertTaskUpdatedCorrectly(response, updateRequest, reporterId, taskId);
 
-        System.out.println("Update all fields test when task has status COMPLETED: ");
-        response.prettyPrint();
-    }
-
-    @Test
-    public void updateCancelledTask() {
-
-        GroupEntity group = createUserWithGroup();
-        int groupId = group.getGroupId();
-        int reporterId = group.getOwnerId();
-        int executorId = insertUserIntoDB(buildUserEntity(groupId));
-
-        TaskEntity taskToUpdate = buildTaskEntity(reporterId);
-        taskToUpdate.setStatus(TaskStatus.CANCELLED.name());
-        insertTaskIntoDB(taskToUpdate);
-
-        String taskId = taskToUpdate.getTaskId();
-
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
-                .executorIds(Set.of(executorId, reporterId))
-                .build();
-
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .queryParam("userId", reporterId)
-                .body(updateRequest)
-                .when()
-                .put(GET_TASKS_URI + "/" + taskId)
-                .then()
-                .statusCode(200)
-                .extract()
-                .response();
-
-        assertTaskUpdatedCorrectly(response, updateRequest, reporterId, taskId);
-
-        System.out.println("Update all fields test when task has status COMPLETED: ");
+        System.out.println("Update all fields test for different statuses: ");
         response.prettyPrint();
     }
 
     @Test
     public void updateAllTaskFields_whenTaskNotExist() {
+
         GroupEntity group = createUserWithGroup();
+
         int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
@@ -180,11 +150,40 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
+    @Test
+    public void updateAllTaskFields_whenExecutorNotExist() {
+
+        GroupEntity group = createUserWithGroup();
+
+        int reporterId = group.getOwnerId();
+
+        TaskEntity taskToUpdate = buildTaskEntity(reporterId);
+        insertTaskIntoDB(taskToUpdate);
+
+        String taskId = taskToUpdate.getTaskId();
+
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest().build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put(GET_TASKS_URI + "/" + taskId)
+                .then()
+                .statusCode(200)
+                .extract()
+                .response();
+
+        System.out.println("Update all fields test with no executor: ");
+        response.prettyPrint();
+    }
+
     @ParameterizedTest(name = "{index} => {0}")
     @MethodSource("missingRequiredField")
     public void updateTask_withMissingRequiredField_returnsBadRequest(String testName, TaskUpdateRequest request, String expectedError) {
 
         GroupEntity group = createUserWithGroup();
+
         int reporterId = group.getOwnerId();
 
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
@@ -212,6 +211,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
     public void updateTask_withWrongDataType_returnsBadRequest(String testName, TaskUpdateRequest request, String expectedError) {
 
         GroupEntity group = createUserWithGroup();
+
         int reporterId = group.getOwnerId();
 
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
@@ -254,6 +254,21 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                         "Invalid rewardsPoints value",
                         buildUpdateTaskRequest().rewardsPoints(0).build(),
                         REWARDS_POINTS_POSITIVE
+                ),
+                Arguments.of(
+                        "Task description too long",
+                        buildUpdateTaskRequest().description("A".repeat(TASK_DESCRIPTION_MAX_LENGTH + 1)).build(),
+                        TASK_DESCRIPTION_TOO_LONG
+                ),
+                Arguments.of(
+                        "Task description too short",
+                        buildUpdateTaskRequest().description("A".repeat(TASK_DESCRIPTION_MIN_LENGTH - 1)).build(),
+                        TASK_DESCRIPTION_TOO_SHORT
+                ),
+                Arguments.of(
+                        "Task name too long",
+                        buildUpdateTaskRequest().name("A".repeat(TASK_NAME_MAX_LENGTH + 1)).build(),
+                        TASK_NAME_TOO_LONG
                 )
         );
     }
@@ -281,6 +296,38 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                         TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED
                 )
         );
+    }
+
+    @Test
+    public void shouldNotAllowAssigningExecutorFromAnotherGroup() {
+
+        GroupEntity groupA = createUserWithGroup();
+        int reporterId = groupA.getOwnerId();
+
+        GroupEntity groupB = createUserWithGroup();
+        int executorFromOtherGroup = groupB.getOwnerId();
+
+        TaskEntity task = buildTaskEntity(reporterId);
+        insertTaskIntoDB(task);
+
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(executorFromOtherGroup))
+                .build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .queryParam("userId", reporterId)
+                .body(updateRequest)
+                .when()
+                .put(GET_TASKS_URI + "/" + task.getTaskId())
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(String.format(CREATE_OR_UPDATE_TASK_FOR_OWN_GROUP)))
+                .extract()
+                .response();
+
+        System.out.println("Attempt to update a task by assigning an executor from another group: ");
+        response.prettyPrint();
     }
 
     private static TaskUpdateRequest.TaskUpdateRequestBuilder buildUpdateTaskRequest() {
@@ -312,12 +359,4 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
         assertEquals(taskId, response.path("taskId"));
     }
 
-    @AfterAll
-    public static void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM rewards");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
-    }
 }

@@ -127,7 +127,12 @@ public class TestDataBaseUtils {
             stmt.setString(5, taskEntity.getStatus());
             stmt.setInt(6, taskEntity.getReporterId());
             stmt.setBoolean(7, taskEntity.isConfidential());
-            stmt.setInt(8, taskEntity.getRewardsPoints());
+
+            if (taskEntity.getRewardsPoints() == null) {
+                stmt.setNull(8, Types.INTEGER);
+            } else {
+                stmt.setInt(8, taskEntity.getRewardsPoints());
+            }
             stmt.setTimestamp(9, Timestamp.valueOf(taskEntity.getDeadline().atStartOfDay()));
             stmt.setTimestamp(10, Timestamp.valueOf(taskEntity.getCreatedAt()));
             stmt.setTimestamp(11, Timestamp.valueOf(taskEntity.getUpdatedAt()));

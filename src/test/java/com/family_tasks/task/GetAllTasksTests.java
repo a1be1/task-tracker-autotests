@@ -8,7 +8,6 @@ import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -19,7 +18,6 @@ import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
@@ -537,25 +535,6 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
-    @AfterEach
-    public void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM rewards");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
-    }
-
-    public static UserEntity buildUserEntity(Integer groupId) {
-        return UserEntity.builder()
-                .admin(true)
-                .name("user_" + randomString(6))
-                .groupId(groupId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
     private List<TaskEntity> createTasksForStatusesAndInsertIntoDB(int userId, TaskStatus... statuses) {
         List<TaskEntity> tasks = new ArrayList<>();
 
@@ -568,6 +547,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                     .priority(TaskPriority.LOW.name())
                     .status(status.name())
                     .confidential(false)
+                    .rewardsPoints(null)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .deadline(LocalDate.now().plusDays(7))
