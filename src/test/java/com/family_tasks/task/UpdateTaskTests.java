@@ -117,7 +117,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void updateAllTaskFields_whenTaskNotExist() {
+    public void updateAllTaskFields_whenTaskNotExist_returnsBadRequest() {
 
         GroupEntity group = createUserWithGroup();
 
@@ -151,18 +151,23 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void updateAllTaskFields_whenExecutorNotExist() {
+    public void updateAllTaskFields_whenExecutorNotExist_returnsBadRequest() {
 
         GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
 
         int reporterId = group.getOwnerId();
+        int executorId = insertUserIntoDB(buildUserEntity(groupId));
+        int nonExistentExecutorId = executorId + 2;
 
         TaskEntity taskToUpdate = buildTaskEntity(reporterId);
         insertTaskIntoDB(taskToUpdate);
 
         String taskId = taskToUpdate.getTaskId();
 
-        TaskUpdateRequest updateRequest = buildUpdateTaskRequest().build();
+        TaskUpdateRequest updateRequest = buildUpdateTaskRequest()
+                .executorIds(Set.of(nonExistentExecutorId))
+                .build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -170,11 +175,12 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .when()
                 .put(GET_TASKS_URI + "/" + taskId)
                 .then()
-                .statusCode(200)
+                .statusCode(400)
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, nonExistentExecutorId)))
                 .extract()
                 .response();
 
-        System.out.println("Update all fields test with no executor: ");
+        System.out.println("Update all fields test when executor does not exist: ");
         response.prettyPrint();
     }
 
@@ -204,6 +210,31 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
         System.out.println("Running test case: " + testName);
         response.prettyPrint();
+    }
+
+    private static Stream<Arguments> missingRequiredField() {
+        return Stream.of(
+                Arguments.of(
+                        "Missing task name",
+                        buildUpdateTaskRequest().name(null).build(),
+                        TASK_NAME_NOT_SPECIFIED
+                ),
+                Arguments.of(
+                        "Missing status",
+                        buildUpdateTaskRequest().status(null).build(),
+                        TASK_STATUS_NULL
+                ),
+                Arguments.of(
+                        "Missing priority",
+                        buildUpdateTaskRequest().priority(null).build(),
+                        TASK_PRIORITY_NULL
+                ),
+                Arguments.of(
+                        "Missing confidential flag",
+                        buildUpdateTaskRequest().confidential(null).build(),
+                        TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED
+                )
+        );
     }
 
     @ParameterizedTest(name = "{index} => {0}")
@@ -269,31 +300,6 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                         "Task name too long",
                         buildUpdateTaskRequest().name("A".repeat(TASK_NAME_MAX_LENGTH + 1)).build(),
                         TASK_NAME_TOO_LONG
-                )
-        );
-    }
-
-    private static Stream<Arguments> missingRequiredField() {
-        return Stream.of(
-                Arguments.of(
-                        "Missing task name",
-                        buildUpdateTaskRequest().name(null).build(),
-                        TASK_NAME_NOT_SPECIFIED
-                ),
-                Arguments.of(
-                        "Missing status",
-                        buildUpdateTaskRequest().status(null).build(),
-                        TASK_STATUS_NULL
-                ),
-                Arguments.of(
-                        "Missing priority",
-                        buildUpdateTaskRequest().priority(null).build(),
-                        TASK_PRIORITY_NULL
-                ),
-                Arguments.of(
-                        "Missing confidential flag",
-                        buildUpdateTaskRequest().confidential(null).build(),
-                        TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED
                 )
         );
     }
