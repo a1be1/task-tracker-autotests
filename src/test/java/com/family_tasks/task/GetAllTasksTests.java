@@ -3,7 +3,6 @@ package com.family_tasks.task;
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.group.GroupEntity;
-import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;

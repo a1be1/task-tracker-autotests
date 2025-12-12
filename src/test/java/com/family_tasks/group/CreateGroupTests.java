@@ -4,12 +4,10 @@ import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.dto.user.UserEntity;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import static com.family_tasks.UrlConstant.GROUP_URL;
 import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.utils.TestDataBaseUtils.executeDbQuery;
 import static com.family_tasks.utils.TestDataBaseUtils.insertUserIntoDB;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -39,6 +37,7 @@ public class CreateGroupTests extends AbstractTaskTrackerTest {
                 .extract()
                 .response();
 
+        System.out.println("Group created with id " + response.getBody().path("groupId"));
         response.prettyPrint();
     }
 
@@ -70,8 +69,8 @@ public class CreateGroupTests extends AbstractTaskTrackerTest {
     public void createGroup_whenUserFromAnotherGroup_thenBadRequest() {
 
         GroupEntity group1 = createUserWithGroup();
-        int groupId1 = group1.getGroupId();
-        int foreignUser = insertUserIntoDB(buildUserEntity(groupId1));
+        int groupId = group1.getGroupId();
+        int foreignUser = insertUserIntoDB(buildUserEntity(groupId));
 
         GroupEntity group2 = GroupEntity.builder()
                 .ownerId(foreignUser)
@@ -136,14 +135,5 @@ public class CreateGroupTests extends AbstractTaskTrackerTest {
                 .response();
 
         response.prettyPrint();
-    }
-
-    @AfterAll
-    public static void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM rewards");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
     }
 }
