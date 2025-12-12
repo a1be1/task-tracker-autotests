@@ -46,6 +46,7 @@ public class CreateGroupTests extends AbstractTaskTrackerTest {
 
     @Test
     public void createGroup_whenUserIsAlreadyOwner_thenBadRequest() {
+
         GroupEntity group1 = createUserWithGroup();
         int ownerId = group1.getOwnerId();
 
@@ -61,6 +62,31 @@ public class CreateGroupTests extends AbstractTaskTrackerTest {
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_ALREADY_IS_OWNER,ownerId)))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createGroup_whenUserFromAnotherGroup_thenBadRequest() {
+
+        GroupEntity group1 = createUserWithGroup();
+        int groupId1 = group1.getGroupId();
+        int foreignUser = insertUserIntoDB(buildUserEntity(groupId1));
+
+        GroupEntity group2 = GroupEntity.builder()
+                .ownerId(foreignUser)
+                .build();
+
+        Response response = given()
+                .contentType("application/json")
+                .body(group2)
+                .when()
+                .post(GROUP_URL)
+                .then()
+                .statusCode(400)
+                .body("errorMessage", equalTo(String.format(USER_ALREADY_HAS_GROUP,foreignUser)))
                 .extract()
                 .response();
 
