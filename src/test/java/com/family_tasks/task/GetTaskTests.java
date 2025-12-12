@@ -2,25 +2,20 @@ package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
-import com.family_tasks.dto.group.GroupEntity;
-import com.family_tasks.dto.user.UserEntity;
+import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.GET_TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
-import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -269,61 +264,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .response();
 
         response.prettyPrint();
-    }
-
-    @AfterAll
-    public static void clearDB() {
-        executeDbQuery("DELETE FROM executors_tasks");
-        executeDbQuery("DELETE FROM tasks");
-        executeDbQuery("DELETE FROM groups");
-        executeDbQuery("DELETE FROM users");
-    }
-
-    private static GroupEntity buildGroupEntity(Integer ownerId) {
-        return GroupEntity.builder()
-                .ownerId(ownerId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .deletedAt(LocalDateTime.now())
-                .build();
-    }
-
-    private static UserEntity buildUserEntity(Integer groupId) {
-        return UserEntity.builder()
-                .admin(true)
-                .name("user_" + randomString(6))
-                .groupId(groupId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
-    }
-
-    public static GroupEntity createUserWithGroup() {
-
-        UserEntity owner = buildUserEntity(null);
-        int ownerId = insertUserIntoDB(owner);
-
-        GroupEntity group = buildGroupEntity(ownerId);
-        int groupId = insertGroupIntoDB(group);
-
-        owner.setGroupId(groupId);
-        updateUserGroupIdInDB(owner);
-        return group;
-    }
-
-    private TaskEntity buildTaskEntity(Integer userId) {
-        return TaskEntity.builder()
-                .taskId(UUID.randomUUID().toString())
-                .name("task_" + randomString(5))
-                .description("desc_" + randomString(10))
-                .reporterId(userId)
-                .priority(TaskPriority.LOW.name())
-                .status(TaskStatus.TO_DO.name())
-                .confidential(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .deadline(LocalDate.now().plusDays(7))
-                .build();
     }
 
 }

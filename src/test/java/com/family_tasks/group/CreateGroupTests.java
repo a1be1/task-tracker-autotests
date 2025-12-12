@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import static com.family_tasks.UrlConstant.GROUP_URL;
 import static com.family_tasks.ValidationMessage.*;
-import static com.family_tasks.task.GetAllTasksTests.buildUserEntity;
-import static com.family_tasks.task.GetTaskTests.createUserWithGroup;
 import static com.family_tasks.utils.TestDataBaseUtils.executeDbQuery;
 import static com.family_tasks.utils.TestDataBaseUtils.insertUserIntoDB;
 import static io.restassured.RestAssured.given;

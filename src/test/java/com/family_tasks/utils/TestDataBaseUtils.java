@@ -114,8 +114,8 @@ public class TestDataBaseUtils {
     public static void insertTaskIntoDB(TaskEntity taskEntity) {
         String sql = """
                 INSERT INTO tasks (id, name, description, priority, status, reporter_id,
-                                   confidential, deadline, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   confidential, rewards_points, deadline, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -127,9 +127,15 @@ public class TestDataBaseUtils {
             stmt.setString(5, taskEntity.getStatus());
             stmt.setInt(6, taskEntity.getReporterId());
             stmt.setBoolean(7, taskEntity.isConfidential());
-            stmt.setTimestamp(8, Timestamp.valueOf(taskEntity.getDeadline().atStartOfDay()));
-            stmt.setTimestamp(9, Timestamp.valueOf(taskEntity.getCreatedAt()));
-            stmt.setTimestamp(10, Timestamp.valueOf(taskEntity.getUpdatedAt()));
+
+            if (taskEntity.getRewardsPoints() == null) {
+                stmt.setNull(8, Types.INTEGER);
+            } else {
+                stmt.setInt(8, taskEntity.getRewardsPoints());
+            }
+            stmt.setTimestamp(9, Timestamp.valueOf(taskEntity.getDeadline().atStartOfDay()));
+            stmt.setTimestamp(10, Timestamp.valueOf(taskEntity.getCreatedAt()));
+            stmt.setTimestamp(11, Timestamp.valueOf(taskEntity.getUpdatedAt()));
 
             stmt.executeUpdate();
         } catch (Exception e) {
