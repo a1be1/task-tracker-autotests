@@ -1,4 +1,4 @@
-package com.family_tasks.dto.user;
+package com.family_tasks.dto.group;
 
 import lombok.*;
 

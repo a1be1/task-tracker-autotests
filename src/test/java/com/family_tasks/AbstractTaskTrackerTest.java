@@ -1,7 +1,8 @@
 package com.family_tasks;
 
 import com.family_tasks.dto.task.TaskEntity;
-import com.family_tasks.dto.user.GroupEntity;
+import com.family_tasks.dto.group.GroupEntity;
+import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 
@@ -44,6 +46,12 @@ public abstract class AbstractTaskTrackerTest {
                 .updatedAt(LocalDateTime.now())
                 .deletedAt(LocalDateTime.now())
                 .build();
+    }
+
+    protected User.UserBuilder buildUser() {
+        return User.builder()
+                .name(randomString(USER_NAME_MAX_LENGTH))
+                .admin(true);
     }
 
     protected UserEntity buildUserEntity(Integer groupId) {
@@ -84,4 +92,5 @@ public abstract class AbstractTaskTrackerTest {
                 .deadline(LocalDate.now().plusDays(7))
                 .build();
     }
+
 }
