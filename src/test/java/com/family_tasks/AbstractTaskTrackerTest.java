@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeAll;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
@@ -54,7 +56,7 @@ public abstract class AbstractTaskTrackerTest {
                 .admin(true);
     }
 
-    protected UserEntity buildUserEntity(Integer groupId) {
+    protected static UserEntity buildUserEntity(Integer groupId) {
         return UserEntity.builder()
                 .admin(true)
                 .name("user_" + randomString(6))
@@ -77,6 +79,17 @@ public abstract class AbstractTaskTrackerTest {
         return group;
     }
 
+    public static List<UserEntity> createAndInsertUsersForGroup(int groupId, int count) {
+        List<UserEntity> users = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            UserEntity user = buildUserEntity(groupId);
+            insertUserIntoDB(user);
+            users.add(user);
+        }
+        return users;
+    }
+
     protected TaskEntity buildTaskEntity(Integer userId) {
         return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
@@ -92,5 +105,4 @@ public abstract class AbstractTaskTrackerTest {
                 .deadline(LocalDate.now().plusDays(7))
                 .build();
     }
-
 }
