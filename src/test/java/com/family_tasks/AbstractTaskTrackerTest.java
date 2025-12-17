@@ -2,6 +2,7 @@ package com.family_tasks;
 
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.group.GroupEntity;
+import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
@@ -11,8 +12,11 @@ import org.junit.jupiter.api.BeforeAll;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 
@@ -46,7 +50,13 @@ public abstract class AbstractTaskTrackerTest {
                 .build();
     }
 
-    protected UserEntity buildUserEntity(Integer groupId) {
+    protected User.UserBuilder buildUser() {
+        return User.builder()
+                .name(randomString(USER_NAME_MAX_LENGTH))
+                .admin(true);
+    }
+
+    protected static UserEntity buildUserEntity(Integer groupId) {
         return UserEntity.builder()
                 .admin(true)
                 .name("user_" + randomString(6))
@@ -67,6 +77,17 @@ public abstract class AbstractTaskTrackerTest {
         owner.setGroupId(groupId);
         updateUserGroupIdInDB(owner);
         return group;
+    }
+
+    public static List<UserEntity> createAndInsertUsersForGroup(int groupId, int count) {
+        List<UserEntity> users = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            UserEntity user = buildUserEntity(groupId);
+            insertUserIntoDB(user);
+            users.add(user);
+        }
+        return users;
     }
 
     protected TaskEntity buildTaskEntity(Integer userId) {

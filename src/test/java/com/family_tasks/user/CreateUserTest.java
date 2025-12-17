@@ -1,9 +1,10 @@
 package com.family_tasks.user;
 
 import com.family_tasks.AbstractTaskTrackerTest;
+import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.dto.user.User;
-import com.family_tasks.utils.TestDataBaseUtils;
-import org.junit.jupiter.api.AfterAll;
+import com.family_tasks.dto.user.UserEntity;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 
 import static com.family_tasks.UrlConstant.CREATE_USER_URI;
@@ -16,18 +17,13 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class CreateUserTest extends AbstractTaskTrackerTest {
 
-    @AfterAll
-    public static void afterAll() {
-        TestDataBaseUtils.executeDbQuery("DELETE FROM users;");
-    }
-
     @Test
     void createUser() {
         {
             User user = buildUser()
                     .build();
 
-            given()
+            Response resp = given()
                     .contentType("application/json")
                     .body(user)
                     .when()
@@ -35,7 +31,10 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .then()
                     .statusCode(200)
                     .body("name", equalTo(user.getName()))
-                    .body("admin", equalTo(user.getAdmin()));
+                    .body("admin", equalTo(user.getAdmin()))
+                    .extract().response();
+
+            resp.prettyPrint();
         }
     }
 
@@ -46,14 +45,17 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .name(null)
                     .build();
 
-            given()
+            Response resp = given()
                     .contentType("application/json")
                     .body(user)
                     .when()
                     .post(CREATE_USER_URI)
                     .then()
                     .statusCode(400)
-                    .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED));
+                    .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED))
+                    .extract().response();
+
+            resp.prettyPrint();
         }
     }
 
@@ -64,14 +66,17 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                 .name("")
                 .build();
 
-        given()
+        Response resp = given()
                 .contentType("application/json")
                 .body(user)
                 .when()
                 .post(CREATE_USER_URI)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED));
+                .body("errorMessage", equalTo(USER_NAME_NOT_SPECIFIED))
+                .extract().response();
+
+        resp.prettyPrint();
     }
 
     @Test
@@ -81,14 +86,17 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .name(randomString(USER_NAME_MAX_LENGTH + 1))
                     .build();
 
-            given()
+            Response resp = given()
                     .contentType("application/json")
                     .body(user)
                     .when()
                     .post(CREATE_USER_URI)
                     .then()
                     .statusCode(400)
-                    .body("errorMessage", equalTo(USER_NAME_TOO_LONG));
+                    .body("errorMessage", equalTo(USER_NAME_TOO_LONG))
+                    .extract().response();
+
+            resp.prettyPrint();
         }
     }
 
@@ -99,20 +107,40 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
                     .admin(null)
                     .build();
 
-            given()
+            Response resp = given()
                     .contentType("application/json")
                     .body(user)
                     .when()
                     .post(CREATE_USER_URI)
                     .then()
                     .statusCode(400)
-                    .body("errorMessage", equalTo(IS_ADMIN_NOT_SPECIFIED));
+                    .body("errorMessage", equalTo(IS_ADMIN_NOT_SPECIFIED))
+                    .extract().response();
+
+            resp.prettyPrint();
         }
     }
 
-    public static User.UserBuilder buildUser() {
-        return User.builder()
-                .name(randomString(USER_NAME_MAX_LENGTH))
-                .admin(true);
+    @Test
+    public void createUser_whenUserRegistersViaLink() {
+
+        GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
+
+        UserEntity user = buildUserEntity(groupId);
+
+        Response resp = given()
+                .contentType("application/json")
+                .body(user)
+                .when()
+                .post(CREATE_USER_URI)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(user.getName()))
+                .body("admin", equalTo(user.getAdmin()))
+                .body("groupId", equalTo(groupId))
+                .extract().response();
+
+        resp.prettyPrint();
     }
 }
