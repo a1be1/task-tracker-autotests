@@ -110,7 +110,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
         }
     }
 
-    private User.UserBuilder buildUser() {
+    public static User.UserBuilder buildUser() {
         return User.builder()
                 .name(randomString(USER_NAME_MAX_LENGTH))
                 .admin(true);
