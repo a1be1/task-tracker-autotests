@@ -143,5 +143,4 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
 
         resp.prettyPrint();
     }
-
 }
