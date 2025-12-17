@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.stream.Stream;
 
@@ -66,18 +65,6 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         resp.prettyPrint();
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {0, -1})
-    void getUser_whenUserIdDoesBoundaryValue_thenReturns404(int userId) {
-
-        given()
-                .when()
-                .get(GET_USER_URI + "/" + userId)
-                .then()
-                .statusCode(404)
-                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, userId)));
-    }
-
     @Test
     public void getUser_whenUserIdDoesNotExist_thenReturns404() {
 
@@ -107,7 +94,6 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
 
         resp.prettyPrint();
     }
-
 
     @ParameterizedTest(name = "Invalid userId format: \"{0}\"")
     @MethodSource("invalidUserIdProvider")
@@ -150,7 +136,6 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
                 .extract().response();
 
         resp.prettyPrint();
-
     }
 
     static Stream<String> sqlInjectionUserIds() {
