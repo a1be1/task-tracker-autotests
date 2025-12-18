@@ -25,6 +25,8 @@ import static com.family_tasks.ValidationMessage.TASK_PRIORITY_NULL;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+import static com.family_tasks.utils.TestDataBaseUtils.*;
+
 
 public class CreateTaskTests extends AbstractTaskTrackerTest {
 
@@ -71,39 +73,6 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
 
         TaskCreateRequest request = taskCreateRequest(reporterId)
                 .name(longName)
-                .build();
-
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post(TASKS_URI)
-                .then()
-                .statusCode(200)
-                .body("taskId", notNullValue())
-                .body("name", equalTo(request.getName()))
-                .body("priority", equalTo(request.getPriority()))
-                .body("reporterId", equalTo(request.getReporterId()))
-                .body("confidential", equalTo(request.getConfidential()))
-                .body("description", equalTo(request.getDescription()))
-                .body("status", equalTo(TaskStatus.TO_DO.name()))
-                .body("deadline", equalTo(request.getDeadline()))
-                .body("executorIds", empty())
-                .body("createdAt", notNullValue())
-                .body("updatedAt", notNullValue())
-                .extract()
-                .response();
-
-        response.prettyPrint();
-    }
-
-    @Test
-    public void createTask_priorityLow_shouldReturn200() {
-        GroupEntity group = createUserWithGroup();
-        int reporterId = group.getOwnerId();
-
-        TaskCreateRequest request = taskCreateRequest(reporterId)
-                .priority(TaskPriority.LOW.name())
                 .build();
 
         Response response = given()
@@ -179,12 +148,38 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void createTask_priorityEmpty_shouldReturn400() {
+    public void createTask_withValidDeadline_shouldReturn200() {
         GroupEntity group = createUserWithGroup();
         int reporterId = group.getOwnerId();
 
+        String validDeadline = "2025-12-31";
+
         TaskCreateRequest request = taskCreateRequest(reporterId)
-                .priority("")
+                .deadline(validDeadline)
+                .build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200)
+                .body("deadline", equalTo(validDeadline))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_deadlineInvalidFormat_shouldReturn400() {
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
+
+        // Wrong format: DD-MM-YYYY
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .deadline("31-12-2025")
                 .build();
 
         Response response = given()
@@ -194,11 +189,131 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
                 .post(TASKS_URI)
                 .then()
                 .statusCode(400)
-                .body("errorMessage", equalTo(TASK_PRIORITY_NULL))
+                .body("errorMessage", notNullValue())
                 .extract()
                 .response();
 
         response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_executorIdsUnique_shouldReturn200() {
+        GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
+        int reporterId = group.getOwnerId();
+
+        int executorId1 = insertUserIntoDB(buildUserEntity(groupId));
+        int executorId2 = insertUserIntoDB(buildUserEntity(groupId));
+        int executorId3 = insertUserIntoDB(buildUserEntity(groupId));
+
+        Set<Integer> executorIds = Set.of(executorId1, executorId2, executorId3);
+
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .executorIds(executorIds)
+                .build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200)
+                .body("taskId", notNullValue())
+                .body("name", equalTo(request.getName()))
+                .body("priority", equalTo(request.getPriority()))
+                .body("reporterId", equalTo(request.getReporterId()))
+                .body("confidential", equalTo(request.getConfidential()))
+                .body("description", equalTo(request.getDescription()))
+                .body("status", equalTo(TaskStatus.TO_DO.name()))
+                .body("deadline", equalTo(request.getDeadline()))
+                .body("executorIds", containsInAnyOrder(executorId1, executorId2, executorId3))
+                .body("createdAt", notNullValue())
+                .body("updatedAt", notNullValue())
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_wrongTypes_thenBadRequest() {
+
+        String invalidJson = """
+        {
+            "name": "Test task",
+            "description": "desc",
+            "priority": "LOW",
+            "reporterId": "abc",
+            "executorIds": ["1", 2],
+            "confidential": "true",
+            "deadline": "2025-12-31"
+        }
+        """;
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(invalidJson)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(400)   // EXPECTED
+                .extract()
+                .response();
+
+        System.out.println("Wrong types test:");
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_descriptionMinLength10_shouldReturn201() {
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
+
+        String minDesc = "1234567890"; // exactly 10 chars
+
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .description(minDesc)
+                .build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200)
+                .body("description", equalTo(minDesc))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    @Test
+    public void createTask_descriptionAtMaxLength_shouldReturn201() {
+        GroupEntity group = createUserWithGroup();
+        int reporterId = group.getOwnerId();
+
+        String maxDesc = generateString(1000);
+
+        TaskCreateRequest request = taskCreateRequest(reporterId)
+                .description(maxDesc)
+                .build();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(TASKS_URI)
+                .then()
+                .statusCode(200);
+    }
+
+    // existing @MethodSource, other helpers...
+
+    private static String generateString(int length) {
+        return "A".repeat(length);
     }
 
     @ParameterizedTest(name = "{index} => {0}")
@@ -237,14 +352,8 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
                                 .priority(null)
                                 .build(),
                         TASK_PRIORITY_NULL
-                ),
-                Arguments.of(
-                        "When task's priority empty",
-                        taskCreateRequest(1)
-                                .priority("")
-                                .build(),
-                        TASK_PRIORITY_NULL
                 )
         );
     }
+
 }

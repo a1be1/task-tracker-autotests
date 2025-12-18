@@ -30,5 +30,7 @@ public final class ValidationMessage {
     public static final String GROUP_NOT_EXIST = "Group with id %d doesn't exist.";
     public static final String NAME_REQUIRED = "Name is required";
     public static final String PRIORITY_REQUIRED = "Priority is required";
+    public static final String EXECUTOR_IDS_NOT_UNIQUE = "Executor ids must be unique.";
+
 
 }
