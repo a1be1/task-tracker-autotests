@@ -159,6 +159,25 @@ public class TestDataBaseUtils {
         }
     }
 
+    public static String getUserNameFromDB(int userId) {
+        String sql = "SELECT name FROM users WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("name");
+                } else {
+                    throw new RuntimeException("User not found in DB with id: " + userId);
+                }
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get user name from DB", e);
+        }
+    }
+
     @FunctionalInterface
     public interface ResultSetHandler<T> {
         T handle(ResultSet resultSet) throws SQLException;
