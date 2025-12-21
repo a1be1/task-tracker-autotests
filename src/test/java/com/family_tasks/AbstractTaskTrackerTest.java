@@ -1,15 +1,7 @@
 package com.family_tasks;
 
-import com.family_tasks.dto.task.TaskCreateRequest;
-import com.family_tasks.dto.user.GroupEntity;
-import com.family_tasks.dto.user.UserEntity;
-import com.family_tasks.enums.TaskPriority;
-import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.group.GroupEntity;
-import com.family_tasks.dto.user.User;
-import com.family_tasks.dto.user.UserEntity;
-import com.family_tasks.enums.TaskPriority;
-import com.family_tasks.enums.TaskStatus;
+import com.family_tasks.dto.task.TaskCreateRequest;
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
@@ -17,35 +9,16 @@ import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
-import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
-import static com.family_tasks.utils.TestDataBaseUtils.executeDbQuery;
-import static com.family_tasks.utils.TestDataBaseUtils.insertUserIntoDB;
-import static com.family_tasks.utils.TestValuesUtils.randomString;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.family_tasks.ValidationConstants.*;
-import static com.family_tasks.utils.TestDataBaseUtils.*;
-import static com.family_tasks.utils.TestValuesUtils.randomString;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 
@@ -69,7 +42,7 @@ public abstract class AbstractTaskTrackerTest {
         executeDbQuery("DELETE FROM users");
     }
 
-    protected UserEntity buildUserEntity(Integer groupId) {
+    protected static UserEntity buildUserEntity(Integer groupId) {
         return UserEntity.builder()
                 .admin(true)
                 .name("user_" + randomString(6))
@@ -89,10 +62,9 @@ public abstract class AbstractTaskTrackerTest {
     }
 
     protected User.UserBuilder buildUser() {
-            return User.builder()
-                    .name(randomString(USER_NAME_MAX_LENGTH))
-                    .admin(true);
-        }
+        return User.builder()
+                .name(randomString(USER_NAME_MAX_LENGTH))
+                .admin(true);
     }
 
     protected GroupEntity createUserWithGroup() {
@@ -107,31 +79,31 @@ public abstract class AbstractTaskTrackerTest {
         return group;
     }
 
-public static List<UserEntity> createAndInsertUsersForGroup(int groupId, int count) {
-    List<UserEntity> users = new ArrayList<>();
+    public static List<UserEntity> createAndInsertUsersForGroup(int groupId, int count) {
+        List<UserEntity> users = new ArrayList<>();
 
-    for (int i = 0; i < count; i++) {
-        UserEntity user = buildUserEntity(groupId);
-        insertUserIntoDB(user);
-        users.add(user);
+        for (int i = 0; i < count; i++) {
+            UserEntity user = buildUserEntity(groupId);
+            insertUserIntoDB(user);
+            users.add(user);
+        }
+        return users;
     }
-    return users;
-}
 
-protected TaskEntity buildTaskEntity(Integer userId) {
-    return TaskEntity.builder()
+    protected TaskEntity buildTaskEntity(Integer userId) {
+        return TaskEntity.builder()
                 .taskId(UUID.randomUUID().toString())
-        .name("task_" + randomString(5))
-        .description("desc_" + randomString(10))
-        .reporterId(userId)
+                .name("task_" + randomString(5))
+                .description("desc_" + randomString(10))
+                .reporterId(userId)
                 .priority(TaskPriority.LOW.name())
-        .status(TaskStatus.TO_DO.name())
-        .confidential(false)
+                .status(TaskStatus.TO_DO.name())
+                .confidential(false)
                 .rewardsPoints(0)
                 .createdAt(LocalDateTime.now())
-        .updatedAt(LocalDateTime.now())
-        .deadline(LocalDate.now().plusDays(7))
-        .build();
+                .updatedAt(LocalDateTime.now())
+                .deadline(LocalDate.now().plusDays(7))
+                .build();
     }
 
     /**

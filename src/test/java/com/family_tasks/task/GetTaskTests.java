@@ -1,16 +1,14 @@
 package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
-import com.family_tasks.dto.task.TaskEntity;
-import com.family_tasks.dto.user.GroupEntity;
 import com.family_tasks.dto.group.GroupEntity;
+import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import static com.family_tasks.utils.TestDataBaseUtils.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -167,7 +165,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void getTaskById_withConfidentialTrueForNotAllowedUser_thenAccessDenied () {
+    public void getTaskById_withConfidentialTrueForNotAllowedUser_thenAccessDenied() {
 
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
