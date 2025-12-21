@@ -7,7 +7,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import static com.family_tasks.UrlConstant.CREATE_USER_URI;
-import static com.family_tasks.ValidationConstants.USER_NAME_MIN_LENGTH;
+import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
@@ -78,7 +78,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
     void createUserWhenNameIsTooLong() {
         {
             User user = buildUser()
-                    .name(randomString(USER_NAME_MIN_LENGTH + 1))
+                    .name(randomString(USER_NAME_MAX_LENGTH + 1))
                     .build();
 
             given()
@@ -112,7 +112,7 @@ public class CreateUserTest extends AbstractTaskTrackerTest {
 
     private User.UserBuilder buildUser() {
         return User.builder()
-                .name(randomString(USER_NAME_MIN_LENGTH))
+                .name(randomString(USER_NAME_MAX_LENGTH))
                 .admin(true);
     }
 }

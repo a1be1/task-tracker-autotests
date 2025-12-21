@@ -17,5 +17,6 @@ public class TaskCreateRequest {
     private Set<Integer> executorIds;
     private Boolean confidential;
     private String deadline;
+    private String status;
 }
 

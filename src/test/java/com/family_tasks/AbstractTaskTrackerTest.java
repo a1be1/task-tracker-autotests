@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-import static com.family_tasks.ValidationConstants.USER_NAME_MIN_LENGTH;
+import static com.family_tasks.ValidationConstants.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 
@@ -86,12 +86,12 @@ public abstract class AbstractTaskTrackerTest {
      */
     protected static TaskCreateRequest.TaskCreateRequestBuilder taskCreateRequest(Integer reporterId) {
         return TaskCreateRequest.builder()
-                .name("name_" + randomString(USER_NAME_MIN_LENGTH))
-                .description(null)
+                .name(randomString(TASK_NAME_MAX_LENGTH))
+                .description(randomString(TASK_DESCRIPTION_MAX_LENGTH))
                 .priority(TaskPriority.LOW.name())
                 .reporterId(reporterId)
                 .executorIds(Set.of())
-                .confidential(false)
+                .confidential(true)
                 .deadline(LocalDate.now().toString());
     }
 }

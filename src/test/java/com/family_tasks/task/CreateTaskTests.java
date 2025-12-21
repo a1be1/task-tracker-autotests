@@ -13,15 +13,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.Arguments;
 
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.family_tasks.UrlConstant.TASKS_URI;
-import static com.family_tasks.ValidationConstants.TASK_NAME_MAX_LENGTH;
-import static com.family_tasks.ValidationMessage.TASK_NAME_NOT_SPECIFIED;
-import static com.family_tasks.ValidationMessage.TASK_NAME_TOO_LONG;
-import static com.family_tasks.ValidationMessage.TASK_PRIORITY_INVALID;
-import static com.family_tasks.ValidationMessage.TASK_PRIORITY_NULL;
+import static com.family_tasks.ValidationConstants.*;
+import static com.family_tasks.ValidationMessage.*;
+import static com.family_tasks.utils.TestValuesUtils.randomInt;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -152,7 +151,7 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
         GroupEntity group = createUserWithGroup();
         int reporterId = group.getOwnerId();
 
-        String validDeadline = "2025-12-31";
+        String validDeadline = LocalDate.now().toString();
 
         TaskCreateRequest request = taskCreateRequest(reporterId)
                 .deadline(validDeadline)
@@ -240,16 +239,16 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
     public void createTask_wrongTypes_thenBadRequest() {
 
         String invalidJson = """
-        {
-            "name": "Test task",
-            "description": "desc",
-            "priority": "LOW",
-            "reporterId": "abc",
-            "executorIds": ["1", 2],
-            "confidential": "true",
-            "deadline": "2025-12-31"
-        }
-        """;
+                {
+                    "name": "Test task",
+                    "description": "desc",
+                    "priority": "LOW",
+                    "reporterId": "abc",
+                    "executorIds": ["1", 2],
+                    "confidential": "true",
+                    "deadline": "2025-12-31"
+                }
+                """;
 
         Response response = given()
                 .contentType(ContentType.JSON)
@@ -295,7 +294,7 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
         GroupEntity group = createUserWithGroup();
         int reporterId = group.getOwnerId();
 
-        String maxDesc = generateString(1000);
+        String maxDesc = randomString(TASK_DESCRIPTION_MAX_LENGTH);
 
         TaskCreateRequest request = taskCreateRequest(reporterId)
                 .description(maxDesc)
@@ -310,16 +309,9 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
                 .statusCode(200);
     }
 
-    // existing @MethodSource, other helpers...
-
-    private static String generateString(int length) {
-        return "A".repeat(length);
-    }
-
-    @ParameterizedTest(name = "{index} => {0}")
+    @ParameterizedTest
     @MethodSource("invalidCreateTaskProvider")
-    public void whenInvalidInput_createTask(String testName,
-                                            TaskCreateRequest request,
+    public void whenInvalidInput_createTask(TaskCreateRequest request,
                                             String expectedMessage) {
 
         Response response = given()
@@ -333,25 +325,57 @@ public class CreateTaskTests extends AbstractTaskTrackerTest {
                 .extract()
                 .response();
 
-        System.out.println(testName);
         response.prettyPrint();
     }
 
     private static Stream<Arguments> invalidCreateTaskProvider() {
         return Stream.of(
                 Arguments.of(
-                        "When invalid priority",
-                        taskCreateRequest(1)
+                        taskCreateRequest(randomInt())
                                 .priority("INVALID_PRIORITY")
                                 .build(),
                         TASK_PRIORITY_INVALID
                 ),
                 Arguments.of(
-                        "When task's priority null",
-                        taskCreateRequest(1)
+                        taskCreateRequest(randomInt())
                                 .priority(null)
                                 .build(),
                         TASK_PRIORITY_NULL
+                ),
+
+                Arguments.of(
+                        taskCreateRequest(randomInt())
+                                .description(randomString(TASK_DESCRIPTION_MAX_LENGTH + 1))
+                                .build(),
+                        TASK_DESCRIPTION_TOO_LONG
+                ),
+
+                Arguments.of(
+                        taskCreateRequest(randomInt())
+                                .description(randomString(TASK_DESCRIPTION_MIN_LENGTH - 1))
+                                .build(),
+                        TASK_DESCRIPTION_TOO_SHORT
+                ),
+
+                Arguments.of(
+                        taskCreateRequest(randomInt())
+                                .deadline(LocalDate.now().minusDays(1).toString())
+                                .build(),
+                        TASK_DEADLINE_DATE_NOT_FUTURE
+                ),
+
+                Arguments.of(
+                        taskCreateRequest(randomInt())
+                                .confidential(null)
+                                .build(),
+                        TASK_CONFIDENTIAL_STATUS_NOT_SPECIFIED
+                ),
+
+                Arguments.of(
+                        taskCreateRequest(randomInt())
+                                .reporterId(null)
+                                .build(),
+                        TASK_REPORTER_NULL
                 )
         );
     }
