@@ -2,8 +2,7 @@ package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
-import com.family_tasks.dto.user.GroupEntity;
-import com.family_tasks.dto.user.UserEntity;
+import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.enums.TaskFilter;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
@@ -20,6 +19,7 @@ import java.util.UUID;
 import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;   // ← REQUIRED
+import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.withArgs;
@@ -518,6 +518,7 @@ public class GetAllTasksTests extends AbstractTaskTrackerTest {
                     .priority(TaskPriority.LOW.name())
                     .status(status.name())
                     .confidential(false)
+                    .rewardsPoints(null)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .deadline(LocalDate.now().plusDays(7))

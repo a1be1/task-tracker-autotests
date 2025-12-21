@@ -3,6 +3,7 @@ package com.family_tasks.task;
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.user.GroupEntity;
+import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
@@ -11,15 +12,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
-import static com.family_tasks.utils.TestValuesUtils.randomString;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -265,18 +263,4 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         response.prettyPrint();
     }
 
-    private TaskEntity buildTaskEntity(Integer userId) {
-        return TaskEntity.builder()
-                .taskId(UUID.randomUUID().toString())
-                .name("task_" + randomString(5))
-                .description("desc_" + randomString(10))
-                .reporterId(userId)
-                .priority(TaskPriority.LOW.name())
-                .status(TaskStatus.TO_DO.name())
-                .confidential(false)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .deadline(LocalDate.now().plusDays(7))
-                .build();
-    }
 }
