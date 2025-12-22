@@ -9,12 +9,14 @@ import com.family_tasks.enums.TaskStatus;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -39,6 +41,16 @@ public abstract class AbstractTaskTrackerTest {
         executeDbQuery("DELETE FROM tasks");
         executeDbQuery("DELETE FROM groups");
         executeDbQuery("DELETE FROM users");
+    }
+
+    protected static Stream<Arguments> invalidUserIdProvider() {
+        return Stream.of(
+                Arguments.of("null"),
+                Arguments.of("abc"),
+                Arguments.of("12abc"),
+                Arguments.of("!@#"),
+                Arguments.of("0x12")
+        );
     }
 
     protected GroupEntity buildGroupEntity(Integer ownerId) {

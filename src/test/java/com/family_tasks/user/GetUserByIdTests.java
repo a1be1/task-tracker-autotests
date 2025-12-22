@@ -6,7 +6,6 @@ import com.family_tasks.dto.user.UserEntity;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
@@ -109,16 +108,6 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
                 .extract().response();
 
         resp.prettyPrint();
-    }
-
-    private static Stream<Arguments> invalidUserIdProvider() {
-        return Stream.of(
-                Arguments.of("null"),
-                Arguments.of("abc"),
-                Arguments.of("12abc"),
-                Arguments.of("!@#"),
-                Arguments.of("0x12")
-        );
     }
 
     @ParameterizedTest
