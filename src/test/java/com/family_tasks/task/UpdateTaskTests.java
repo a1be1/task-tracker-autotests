@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationConstants.*;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -29,7 +29,6 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpdateTaskTests extends AbstractTaskTrackerTest {
 
@@ -55,7 +54,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_TASKS_URI + "/" + taskId)
+                .put(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .extract()
@@ -104,7 +103,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .body(updateRequest)
                 .when()
-                .put(GET_TASKS_URI + "/" + taskId)
+                .put(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .extract()
@@ -139,7 +138,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .body(updateRequest)
                 .when()
-                .put(GET_TASKS_URI + "/" + nonExistentTask)
+                .put(TASKS_URI + "/" + nonExistentTask)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, nonExistentTask)))
@@ -173,7 +172,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_TASKS_URI + "/" + taskId)
+                .put(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, nonExistentExecutorId)))
@@ -201,7 +200,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .put(GET_TASKS_URI + "/" + taskId)
+                .put(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(expectedError))
@@ -254,7 +253,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .put(GET_TASKS_URI + "/" + taskId)
+                .put(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(expectedError))
@@ -325,7 +324,7 @@ public class UpdateTaskTests extends AbstractTaskTrackerTest {
                 .queryParam("userId", reporterId)
                 .body(updateRequest)
                 .when()
-                .put(GET_TASKS_URI + "/" + task.getTaskId())
+                .put(TASKS_URI + "/" + task.getTaskId())
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(CREATE_OR_UPDATE_TASK_FOR_OWN_GROUP)))
