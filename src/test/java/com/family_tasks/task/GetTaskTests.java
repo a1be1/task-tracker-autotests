@@ -1,8 +1,8 @@
 package com.family_tasks.task;
 
 import com.family_tasks.AbstractTaskTrackerTest;
-import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.group.GroupEntity;
+import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.restassured.response.Response;
@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.List;
 import java.util.UUID;
 
-import static com.family_tasks.UrlConstant.GET_TASKS_URI;
+import static com.family_tasks.UrlConstant.TASKS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static io.restassured.RestAssured.given;
@@ -27,7 +27,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnTaskWithGivenPriority(TaskPriority priority) {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
@@ -39,7 +38,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -73,7 +72,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -95,7 +94,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_shouldReturnConfidentialTask_forReporter() {
 
         GroupEntity group = createUserWithGroup();
-
         int reporterId = group.getOwnerId();
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
@@ -107,7 +105,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -130,14 +128,13 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     public void getTaskById_withConfidentialTrue_forExecutor() {
 
         GroupEntity group = createUserWithGroup();
-
         int groupId = group.getGroupId();
         int reporterId = group.getOwnerId();
+
         int executorId = insertUserIntoDB(buildUserEntity(groupId));
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
-
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
@@ -147,7 +144,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", executorId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(200)
                 .body("taskId", equalTo(taskId))
@@ -168,7 +165,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
     }
 
     @Test
-    public void getTaskById_withConfidentialTrueForNotAllowedUser_thenAccessDenied () {
+    public void getTaskById_withConfidentialTrueForNotAllowedUser_thenAccessDenied() {
 
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
@@ -181,7 +178,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         TaskEntity taskEntity = buildTaskEntity(reporterId);
         taskEntity.setConfidential(true);
-
         insertTaskIntoDB(taskEntity);
 
         String taskId = taskEntity.getTaskId();
@@ -189,10 +185,10 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", notAllowedUserId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST,taskId)))
+                .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, taskId)))
                 .extract()
                 .response();
 
@@ -211,7 +207,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
 
         Response response = given()
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(USER_NOT_SPECIFIED))
@@ -219,7 +215,6 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
                 .response();
 
         response.prettyPrint();
-
     }
 
     @Test
@@ -231,15 +226,15 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         insertTaskIntoDB(taskEntity);
         String taskId = taskEntity.getTaskId();
 
-        int invalidUserId = reporterId +2;
+        int invalidUserId = reporterId + 2;
 
         Response response = given()
                 .queryParam("userId", invalidUserId)
                 .when()
-                .get(GET_TASKS_URI + "/" + taskId)
+                .get(TASKS_URI + "/" + taskId)
                 .then()
                 .statusCode(404)
-                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST,invalidUserId)))
+                .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, invalidUserId)))
                 .extract()
                 .response();
 
@@ -256,7 +251,7 @@ public class GetTaskTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("userId", reporterId)
                 .when()
-                .get(GET_TASKS_URI + "/" + invalidTaskId)
+                .get(TASKS_URI + "/" + invalidTaskId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(TASK_NOT_EXIST, invalidTaskId)))

@@ -1,5 +1,6 @@
 package com.family_tasks;
 
+import com.family_tasks.dto.task.TaskCreateRequest;
 import com.family_tasks.dto.task.TaskEntity;
 import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.dto.user.User;
@@ -15,10 +16,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
+import static com.family_tasks.ValidationConstants.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomString;
 
@@ -116,5 +118,20 @@ public abstract class AbstractTaskTrackerTest {
                 .updatedAt(LocalDateTime.now())
                 .deadline(LocalDate.now().plusDays(7))
                 .build();
+    }
+
+    /**
+     * Common builder for TaskCreateRequest used in multiple tests.
+     * Static so it can be used from static @MethodSource.
+     */
+    protected static TaskCreateRequest.TaskCreateRequestBuilder taskCreateRequest(Integer reporterId) {
+        return TaskCreateRequest.builder()
+                .name(randomString(TASK_NAME_MAX_LENGTH))
+                .description(randomString(TASK_DESCRIPTION_MAX_LENGTH))
+                .priority(TaskPriority.LOW.name())
+                .reporterId(reporterId)
+                .executorIds(Set.of())
+                .confidential(true)
+                .deadline(LocalDate.now().toString());
     }
 }
