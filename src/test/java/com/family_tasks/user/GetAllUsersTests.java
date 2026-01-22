@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.family_tasks.UrlConstant.GET_USER_URI;
+import static com.family_tasks.UrlConstant.USERS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
 import static com.family_tasks.utils.TestValuesUtils.randomInt;
@@ -29,12 +29,12 @@ public class GetAllUsersTests extends AbstractTaskTrackerTest {
         int groupId = group.getGroupId();
 
         int ownerId = group.getOwnerId();
-        String ownerName = getUserNameFromDB(ownerId);
+        String ownerName = getUserFromDB(ownerId).getName();
 
         Response response = given()
                 .queryParam("groupId", groupId)
                 .when()
-                .get(GET_USER_URI)
+                .get(USERS_URI)
                 .then()
                 .statusCode(200)
                 .body("size()", equalTo(1))
@@ -59,7 +59,7 @@ public class GetAllUsersTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("groupId", groupId)
                 .when()
-                .get(GET_USER_URI)
+                .get(USERS_URI)
                 .then()
                 .statusCode(200)
                 .extract().response();
@@ -78,12 +78,32 @@ public class GetAllUsersTests extends AbstractTaskTrackerTest {
         response.then().body("size()", equalTo(expectedSize));
     }
 
+    @Test public void getAllUsers_whenExecutorFromAnotherGroup() {
+        GroupEntity firstGroup = createUserWithGroup();
+        int firstUserId = firstGroup.getOwnerId();
+
+        GroupEntity secondGroup = createUserWithGroup();
+        int secondGroupId = secondGroup.getGroupId();
+
+        Response response = given()
+                .queryParam("groupId", secondGroupId)
+                .when()
+                .get(USERS_URI)
+                .then()
+                .statusCode(200)
+                .body("size()", equalTo(1))
+                .body("findAll { it.userId == %s }.size()", withArgs(firstUserId), equalTo(0))
+                .extract().response();
+
+        response.prettyPrint();
+    }
+
     @Test
     public void getAllUsers_whenMisingGroupId_thenReturns400() {
 
         Response response = given()
                 .when()
-                .get(GET_USER_URI)
+                .get(USERS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(GROUP_NOT_SPECIFIED)))
@@ -100,7 +120,7 @@ public class GetAllUsersTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .queryParam("groupId", nonExistentGroupId)
                 .when()
-                .get(GET_USER_URI)
+                .get(USERS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(GROUP_NOT_EXIST, nonExistentGroupId)))
@@ -115,7 +135,7 @@ public class GetAllUsersTests extends AbstractTaskTrackerTest {
         Response resp = given()
                 .queryParam("groupId", invalidGroupId)
                 .when()
-                .get(GET_USER_URI)
+                .get(USERS_URI)
                 .then()
                 .statusCode(400)
                 .body("errorMessage",
