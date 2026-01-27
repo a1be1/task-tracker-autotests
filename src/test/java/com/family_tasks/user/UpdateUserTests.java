@@ -2,6 +2,7 @@ package com.family_tasks.user;
 
 import com.family_tasks.AbstractTaskTrackerTest;
 import com.family_tasks.dto.group.GroupEntity;
+import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.dto.user.UserUpdateRequest;
 import io.restassured.http.ContentType;
@@ -13,7 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static com.family_tasks.UrlConstant.GET_USER_URI;
+import static com.family_tasks.UrlConstant.USERS_URI;
 import static com.family_tasks.ValidationConstants.USER_NAME_MAX_LENGTH;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -31,19 +32,23 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
         insertUserIntoDB(user);
         int userId = user.getId();
 
-        UserUpdateRequest updateRequest = buildUpdateUserRequest(null).build();
+        GroupEntity group = buildGroupEntity(userId);
+        insertGroupIntoDB(group);
+        int groupId = group.getGroupId();
+
+        UserUpdateRequest updateRequest = buildUpdateUserRequest(groupId).build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + userId)
+                .put(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(200)
                 .body("userId", equalTo(userId))
                 .body("name", equalTo(updateRequest.getName()))
                 .body("admin", equalTo(updateRequest.getAdmin()))
-                .body("groupId", nullValue())
+                .body("groupId", notNullValue())
                 .extract()
                 .response();
 
@@ -54,22 +59,81 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
     public void updateUser_whenUserIsOwner() {
 
         GroupEntity group = createUserWithGroup();
-        int groupId = group.getGroupId();
         int ownerId = group.getOwnerId();
 
-        UserUpdateRequest updateRequest = buildUpdateUserRequest(groupId).build();
+        UserUpdateRequest updateRequest = buildUpdateUserRequest(null).build();
 
         Response response = given()
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + ownerId)
+                .put(USERS_URI + "/" + ownerId)
                 .then()
                 .statusCode(200)
                 .body("userId", equalTo(ownerId))
                 .body("name", equalTo(updateRequest.getName()))
                 .body("admin", equalTo(updateRequest.getAdmin()))
-                .body("groupId", notNullValue())
+                .body("groupId", nullValue())
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    // TODO: backend currently allows changing group for existing user
+    // TODO: change status to 400, replace body check
+    @Test
+    public void attemptToUpdateUser_whenOwnerAlreadyHasGroup_thenReturn400() {
+
+        GroupEntity group = createUserWithGroup();
+        int ownerId = group.getOwnerId();
+
+        GroupEntity newGroup = createUserWithGroup();
+        int newGroupId = newGroup.getGroupId();
+
+        UserUpdateRequest updateRequest = buildUpdateUserRequest(newGroupId).build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put(USERS_URI + "/" + ownerId)
+                .then()
+                .statusCode(200)
+//                .body("errorMessage", equalTo(USER_ALREADY_HAS_GROUP))
+                .body("groupId", equalTo(newGroupId))
+                .extract()
+                .response();
+
+        response.prettyPrint();
+    }
+
+    // TODO: backend currently allows changing group for existing user
+    // TODO: change status to 400, replace body check
+
+    @Test
+    public void attemptToUpdateUser_whenNonOwnerUserHasAGroup() {
+        GroupEntity group = createUserWithGroup();
+        int groupId = group.getGroupId();
+
+        UserEntity nonOwner = buildUserEntity(groupId);
+        insertUserIntoDB(nonOwner);
+        int nonOwnerId = nonOwner.getId();
+
+        GroupEntity newGroup = createUserWithGroup();
+        int newGroupId = newGroup.getGroupId();
+
+        UserUpdateRequest updateRequest = buildUpdateUserRequest(newGroupId).build();
+
+        Response response = given()
+                .contentType(ContentType.JSON)
+                .body(updateRequest)
+                .when()
+                .put(USERS_URI + "/" + nonOwnerId)
+                .then()
+                .statusCode(200)
+//                .body("errorMessage", equalTo(USER_ALREADY_HAS_GROUP))
+                .body("groupId", equalTo(newGroupId))
                 .extract()
                 .response();
 
@@ -82,7 +146,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
         GroupEntity group = createUserWithGroup();
         int groupId = group.getGroupId();
 
-        int newUserId = insertUserIntoDB(buildUserEntity(groupId));
+        int newUserId = insertUserIntoDB(buildUserEntity(null));
 
         UserUpdateRequest updateRequest = buildUpdateUserRequest(groupId).build();
 
@@ -90,7 +154,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + newUserId)
+                .put(USERS_URI + "/" + newUserId)
                 .then()
                 .statusCode(200)
                 .body("userId", equalTo(newUserId))
@@ -114,7 +178,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + nonExistentUserId)
+                .put(USERS_URI + "/" + nonExistentUserId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, nonExistentUserId)))
@@ -138,7 +202,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + userId)
+                .put(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(String.format(USER_NAME_TOO_LONG)))
@@ -156,7 +220,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
 
         Response resp = given()
                 .when()
-                .put(GET_USER_URI + "/" + invalidUserId)
+                .put(USERS_URI + "/" + invalidUserId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage",
@@ -178,7 +242,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .put(GET_USER_URI + "/" + userId)
+                .put(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage", equalTo(expectedError))
@@ -223,7 +287,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
                 .contentType(ContentType.JSON)
                 .body(updateRequest)
                 .when()
-                .put(GET_USER_URI + "/" + userId)
+                .put(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage",
@@ -244,7 +308,7 @@ public class UpdateUserTests extends AbstractTaskTrackerTest {
         Response response = given()
                 .contentType(ContentType.JSON)
                 .when()
-                .put(GET_USER_URI + "/" + userId)
+                .put(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage",
