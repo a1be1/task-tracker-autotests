@@ -6,12 +6,11 @@ import com.family_tasks.dto.user.UserEntity;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static com.family_tasks.UrlConstant.GET_USER_URI;
+import static com.family_tasks.UrlConstant.USERS_URI;
 import static com.family_tasks.ValidationMessage.*;
 import static com.family_tasks.utils.TestDataBaseUtils.insertUserIntoDB;
 import static io.restassured.RestAssured.given;
@@ -30,7 +29,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         Response resp = given()
                 .contentType("application/json")
                 .when()
-                .get(GET_USER_URI + "/" + userId)
+                .get(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(200)
                 .body("name", equalTo(user.getName()))
@@ -54,7 +53,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         Response resp = given()
                 .contentType("application/json")
                 .when()
-                .get(GET_USER_URI + "/" + userId)
+                .get(USERS_URI + "/" + userId)
                 .then()
                 .statusCode(200)
                 .body("name", equalTo(user.getName()))
@@ -73,7 +72,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         Response resp = given()
                 .contentType("application/json")
                 .when()
-                .get(GET_USER_URI + "/" + nonExistUserId)
+                .get(USERS_URI + "/" + nonExistUserId)
                 .then()
                 .statusCode(404)
                 .body("errorMessage", equalTo(String.format(USER_NOT_EXIST, nonExistUserId)))
@@ -87,7 +86,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
 
         Response resp = given()
                 .when()
-                .get(GET_USER_URI + "/")
+                .get(USERS_URI + "/")
                 .then()
                 .statusCode(404)
                 .extract().response();
@@ -101,7 +100,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
 
         Response resp = given()
                 .when()
-                .get(GET_USER_URI + "/" + invalidUserId)
+                .get(USERS_URI + "/" + invalidUserId)
                 .then()
                 .statusCode(400)
                 .body("errorMessage",
@@ -111,16 +110,6 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         resp.prettyPrint();
     }
 
-    private static Stream<Arguments> invalidUserIdProvider() {
-        return Stream.of(
-                Arguments.of("null"),
-                Arguments.of("abc"),
-                Arguments.of("12abc"),
-                Arguments.of("!@#"),
-                Arguments.of("0x12")
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("sqlInjectionUserIds")
     void getUser_whenUserIdIsSqlInjection_thenReturns400or404(String userId) {
@@ -128,7 +117,7 @@ public class GetUserByIdTests extends AbstractTaskTrackerTest {
         Response resp = given()
                 .pathParam("userId", userId)
                 .when()
-                .get(GET_USER_URI + "/{userId}")
+                .get(USERS_URI + "/{userId}")
                 .then()
                 .statusCode(anyOf(is(400), is(404)))
                 .body(not(hasKey("stackTrace")))

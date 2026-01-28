@@ -1,15 +1,16 @@
 package com.family_tasks;
 
-import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.dto.task.TaskCreateRequest;
 import com.family_tasks.dto.task.TaskEntity;
+import com.family_tasks.dto.group.GroupEntity;
 import com.family_tasks.dto.user.User;
 import com.family_tasks.dto.user.UserEntity;
 import com.family_tasks.enums.TaskPriority;
 import com.family_tasks.enums.TaskStatus;
 import io.github.cdimascio.dotenv.Dotenv;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.family_tasks.ValidationConstants.*;
 import static com.family_tasks.utils.TestDataBaseUtils.*;
@@ -26,6 +28,7 @@ public abstract class AbstractTaskTrackerTest {
 
     @BeforeAll
     static void setup() {
+
         Dotenv dotenv = Dotenv.configure()
                 .ignoreIfMissing()
                 .load();
@@ -33,8 +36,8 @@ public abstract class AbstractTaskTrackerTest {
         dotenv.get("TASK_TRACKER_BASE_URL");
     }
 
-    @AfterEach
-    public void clearDB() {
+    @AfterAll
+    public static void clearDB() {
         executeDbQuery("DELETE FROM executors_tasks");
         executeDbQuery("DELETE FROM rewards");
         executeDbQuery("DELETE FROM tasks");
@@ -42,14 +45,14 @@ public abstract class AbstractTaskTrackerTest {
         executeDbQuery("DELETE FROM users");
     }
 
-    protected static UserEntity buildUserEntity(Integer groupId) {
-        return UserEntity.builder()
-                .admin(true)
-                .name("user_" + randomString(6))
-                .groupId(groupId)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+    protected static Stream<Arguments> invalidUserIdProvider() {
+        return Stream.of(
+                Arguments.of("null"),
+                Arguments.of("abc"),
+                Arguments.of("12abc"),
+                Arguments.of("!@#"),
+                Arguments.of("0x12")
+        );
     }
 
     protected GroupEntity buildGroupEntity(Integer ownerId) {
@@ -67,7 +70,18 @@ public abstract class AbstractTaskTrackerTest {
                 .admin(true);
     }
 
+    protected static UserEntity buildUserEntity(Integer groupId) {
+        return UserEntity.builder()
+                .admin(true)
+                .name("user_" + randomString(6))
+                .groupId(groupId)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
     protected GroupEntity createUserWithGroup() {
+
         UserEntity owner = buildUserEntity(null);
         int ownerId = insertUserIntoDB(owner);
 
