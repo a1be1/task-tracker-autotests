@@ -168,27 +168,27 @@ public class TestDataBaseUtils {
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, userId);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return UserEntity.builder()
-                            .id(rs.getInt("id"))
-                            .name(rs.getString("name"))
-                            .admin(rs.getBoolean("admin"))
-                            .groupId( rs.getInt("group_id"))
-                            .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
-                            .updatedAt(rs.getTimestamp("updated_at").toLocalDateTime())
-                            .build();
-                } else {
-                    throw new RuntimeException("User not found in DB with id: " + userId);
+                if (!rs.next()) {
+                    throw new RuntimeException("User not found with id: " + userId);
                 }
+                return mapUser(rs);
             }
-
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get user from DB", e);
+            throw new RuntimeException("Error fetching user " + userId, e);
         }
+    }
+
+    private static UserEntity mapUser(ResultSet rs) throws SQLException {
+        return UserEntity.builder()
+                .id(rs.getInt("id"))
+                .name(rs.getString("name"))
+                .admin(rs.getBoolean("admin"))
+                .groupId(rs.getObject("group_id", Integer.class))
+                .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+                .updatedAt(rs.getTimestamp("updated_at").toLocalDateTime())
+                .build();
     }
 
     @FunctionalInterface
