@@ -159,6 +159,38 @@ public class TestDataBaseUtils {
         }
     }
 
+    public static UserEntity getUserFromDB(int userId) {
+        String sql = """
+            SELECT id, name, admin, group_id, created_at, updated_at
+            FROM users
+            WHERE id = ?
+            """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new RuntimeException("User not found with id: " + userId);
+                }
+                return mapUser(rs);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching user " + userId, e);
+        }
+    }
+
+    private static UserEntity mapUser(ResultSet rs) throws SQLException {
+        return UserEntity.builder()
+                .id(rs.getInt("id"))
+                .name(rs.getString("name"))
+                .admin(rs.getBoolean("admin"))
+                .groupId(rs.getObject("group_id", Integer.class))
+                .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+                .updatedAt(rs.getTimestamp("updated_at").toLocalDateTime())
+                .build();
+    }
+
     @FunctionalInterface
     public interface ResultSetHandler<T> {
         T handle(ResultSet resultSet) throws SQLException;
